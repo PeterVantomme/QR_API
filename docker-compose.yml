@@ -1,0 +1,8 @@
+version: "3.10"
+services:
+  web:
+    build: .
+    ports:
+      - "80:80"
+    volumes:
+      - .:QR_API_0.0.1
