@@ -10,3 +10,5 @@ pycryptodomex
 pyzbar==0.1.9
 uvicorn==0.17.6
 gunicorn==20.1.0
+passlib[bcrypt]
+python-jose[cryptography]
