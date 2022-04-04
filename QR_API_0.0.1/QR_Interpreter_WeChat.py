@@ -1,7 +1,6 @@
 # QR-code reader - WeChat OpenCV
 ## Imports & global variables
-from datetime import datetime
-startTime = datetime.now()
+import Config
 
 #QR-scanning - WECHAT
 import cv2
@@ -13,23 +12,14 @@ import json
 from Cryptodome.Cipher import AES
 from phpserialize import loads
 
-KEY = b'EDnpXl5oxi9+XHjTUbTwMg98jTeCt4tnJx5LaUtanME='
-QR_DIRECTORY = '$Temp_Images_for_QRReading'
-DATA_DIRECTORY = 'DATA'
+KEY = Config.Auth.KEY.value
+QR_DIRECTORY = Config.Filepath.TRANSFORMED_IMAGES.value
+DATA_DIRECTORY = Config.Filepath.DATA_IN.value
 
 DETECTOR_PT_PATH = 'Models/WeChat/detect.prototxt'
 SR_PT_PATH = 'Models/WeChat/sr.prototxt'
 DETECTOR_CAFFE_PATH = 'Models/WeChat/detect.caffemodel'
 SR_CAFFE_PATH = 'Models/WeChat/sr.caffemodel'
-
-RED = (0,0,255)
-GREEN = (0,255,0)
-BLUE = (255,0,0)
-YELLOW = (0,255,255)
-# Font.
-FONT = cv2.FONT_HERSHEY_SIMPLEX
-FONTSCALE = 0.8
-UNPAD = lambda s: s[:-ord(s[len(s) - 1:])]
 
 ## Decrypter
 def decrypt(laravelEncrypedStringBase64, laravelAppKeyBase64):

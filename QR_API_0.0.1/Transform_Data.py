@@ -1,14 +1,15 @@
 # Processeren van PDF voor het verkrijgen van een image voor de QR-code
 ## Imports & Globals
-DATA_DIRECTORY = "Data"
-IMAGE_DIRECTORY = "$Temp_Images"
-DOCUMENT_DIRECTORY = "$Temp_Documents"
-QR_IMAGE_DIRECTORY = "$Temp_Images_for_QRReading"
-
+import Config
 import os
 import fitz
 import cv2
 from PyPDF2  import PdfFileReader, PdfFileWriter
+
+DATA_DIRECTORY = Config.Filepath.DATA_IN.value
+IMAGE_DIRECTORY = Config.Filepath.RAW_IMAGES.value
+DOCUMENT_DIRECTORY = Config.Filepath.DOCUMENTS.value
+QR_IMAGE_DIRECTORY = Config.Filepath.TRANSFORMED_IMAGES.value
 
 ## Transformaties
 def transform_pdf_to_png(filename):
