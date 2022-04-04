@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.security import OAuth2PasswordBearer
 from pydantic import conint
 import uvicorn
 import base64
@@ -8,6 +9,7 @@ import Transform_Data
 import Config
 
 app = FastAPI()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 async def parse_body(request: Request):
     data: bytes = await request.body()
@@ -18,7 +20,7 @@ def get_home():
     return HTMLResponse('<html><body><h3>Welcome to the QR-API, there is no GUI for this so use requests only. (/docs for info) </h3></body></html>', 200)
 
 @app.post("/data")
-def parse_input(data: bytes = Depends(parse_body)):
+def parse_input(data: bytes = Depends(parse_body), token: str = Depends(oauth2_scheme)):
     FILEPATH_PDF = Config.Filepath.DATA_IN.value
     data = base64.b64decode(data)
     file = open(f'{FILEPATH_PDF}/{Config.Filepath.DATA_OUT_FILENAME.value}.pdf', 'wb')
