@@ -16,7 +16,3 @@ file = open(f'datafile.pdf', 'wb')
 file.write(base64.b64decode(PDF))
 print(filename," : ",QR_contents)
 file.close()
-
-
-reply = requests.get("http://127.0.0.1:80/home", headers={"User-Agent" : "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36"})
-print(reply)
