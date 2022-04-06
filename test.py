@@ -1,62 +1,61 @@
 import base64
 import json
+import unittest
 import requests
 
-def wrong_password_username() -> str:
-    login_dict = json.dumps({"username":"devt","password":"secrett"})
-    body = base64.b64encode(login_dict.encode())
+class helper():
 
-    credentials = requests.post("http://127.0.0.1:1600/token", data=body)
-    access_token = str(json.loads(credentials.content))
-    return access_token
+    def wrong_password_username() -> str:
+        login_dict = json.dumps({"username":"devt","password":"secrett"})
+        body = base64.b64encode(login_dict.encode())
 
-def wrong_password() -> str:
-    login_dict = json.dumps({"username":"dev","password":"secrett"})
-    body = base64.b64encode(login_dict.encode())
+        credentials = requests.post("http://127.0.0.1:1600/token", data=body)
+        access_token = str(json.loads(credentials.content))
+        return access_token
 
-    credentials = requests.post("http://127.0.0.1:1600/token", data=body)
-    access_token = str(json.loads(credentials.content))
-    return access_token
+    def wrong_password() -> str:
+        login_dict = json.dumps({"username":"dev","password":"secrett"})
+        body = base64.b64encode(login_dict.encode())
 
-def wrong_username() -> str:
-    login_dict = json.dumps({"username":"devt","password":"secret"})
-    body = base64.b64encode(login_dict.encode())
+        credentials = requests.post("http://127.0.0.1:1600/token", data=body)
+        access_token = str(json.loads(credentials.content))
+        return access_token
 
-    credentials = requests.post("http://127.0.0.1:1600/token", data=body)
-    access_token = str(json.loads(credentials.content))
-    return access_token
+    def wrong_username() -> str:
+        login_dict = json.dumps({"username":"devt","password":"secret"})
+        body = base64.b64encode(login_dict.encode())
 
-def correct_credentials() -> str:
-    login_dict = json.dumps({"username":"dev","password":"secret"})
-    body = base64.b64encode(login_dict.encode())
+        credentials = requests.post("http://127.0.0.1:1600/token", data=body)
+        access_token = str(json.loads(credentials.content))
+        return access_token
 
-    credentials = requests.post("http://127.0.0.1:1600/token", data=body)
-    access_token = str(json.loads(credentials.content))
-    print(access_token)
-    return access_token
+    def correct_credentials() -> str:
+        login_dict = json.dumps({"username":"dev","password":"secret"})
+        body = base64.b64encode(login_dict.encode())
 
-#print(wrong_password())
-#print(wrong_password_username())
-#print(wrong_username())
-#print(correct_credentials())
+        credentials = requests.post("http://127.0.0.1:1600/token", data=body)
+        access_token = str(json.loads(credentials.content))
+        return access_token
 
-def run_post_request(access_token):
-    with open("HPD201324TC-20220329-101119-002.pdf", "rb") as pdf_file:
-        encoded = base64.b64encode(pdf_file.read())
-    body=bytes(encoded)
-    reply=requests.post(f"http://127.0.0.1:1600/data/{access_token}",data=body)
-    filename = json.loads(reply.content.decode("utf-8")).get("filename")
-    QR_contents = json.loads(reply.content.decode("utf-8")).get("QR_content")
-    PDF = json.loads(reply.content.decode("utf-8")).get("Pages")
-    with open(f'datafile.pdf', 'wb') as file:
-        file.write(base64.b64decode(PDF))
-    return {filename:QR_contents}
-
-def run_correct_pr():
-    return run_post_request(correct_credentials())
-
-def run_wrong_pr():
-    return run_post_request(wrong_password_username())
-
-run_wrong_pr()
+    def run_post_request(access_token):
+        with open("HPD201324TC-20220329-101119-002.pdf", "rb") as pdf_file:
+            encoded = base64.b64encode(pdf_file.read())
+        body=bytes(encoded)
+        reply=requests.post(f"http://127.0.0.1:1600/data/{access_token}",data=body)
+        if reply.status_code == 401:
+            return json.loads(reply.content.decode())
+        elif reply.status_code == 200:
+            filename = json.loads(reply.content.decode("utf-8")).get("filename")
+            QR_contents = json.loads(reply.content.decode("utf-8")).get("QR_content")
+            PDF = json.loads(reply.content.decode("utf-8")).get("Pages")
+            with open(f'datafile.pdf', 'wb') as file:
+                file.write(base64.b64decode(PDF))
+            return {filename:QR_contents}
+        elif reply.status_code == 404:
+            return "page not found"
+        else:
+            return "unknown error"
+for i in range(5):
+    print(helper.run_post_request(helper.correct_credentials()))
+    print(helper.run_post_request(helper.correct_credentials()))
 #TODO: in main.py exceptions toevoegen zodat de errors duidelijk zijn voor end-user

@@ -27,9 +27,9 @@ class Security():
     def authenticate_user(self, authorised_users, username: str, password: str):
         user = self.get_user(authorised_users, username)
         if user is None:
-            raise HTTPException(status_code=400, detail="Incorrect username or password")
+            raise HTTPException(status_code=400, detail="400 - Incorrect username or password")
         if not self.verify_password(password, user.get('hashed_password')):
-            raise HTTPException(status_code=400, detail="Incorrect username or password")
+            raise HTTPException(status_code=400, detail="400 - Incorrect username or password")
         return user
 
     def create_access_token(self, data: dict, expires_delta: timedelta | None = None):

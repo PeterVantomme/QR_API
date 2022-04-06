@@ -20,7 +20,7 @@ from Security import Security as sec
 ACCESS_TOKEN_EXPIRE_DAYS = Config.Auth.AUTH_TIME.value
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
+FILENAME = Config.Filepath.DATA_OUT_FILENAME.value
 app = FastAPI()
 
 #Byte body handler
@@ -32,7 +32,7 @@ async def parse_body(request: Request):
 async def get_current_user(token):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
+        detail="401 - Could not validate credentials - Invalid token",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
@@ -44,15 +44,12 @@ async def get_current_user(token):
         return token_data
     except FileExistsError:
         print("no")
-    '''
     except JWTError:
         raise credentials_exception
     user = sec.get_user(Authorised_users, username=token_data.username)
     if user is None:
         raise credentials_exception
     return user
-    '''
-
 
 @app.get("/")
 def get_home():
@@ -67,7 +64,7 @@ async def login_for_access_token(data: bytes = Depends(parse_body)):
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail="401 - Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
@@ -79,30 +76,32 @@ async def login_for_access_token(data: bytes = Depends(parse_body)):
 @app.post("/data/{token}")
 async def parse_input(token, data: bytes = Depends(parse_body)):
     user = await get_current_user(token)
+    filename = FILENAME+str(Config.Indexer.VALUE+1)
     if user != None:
         data = base64.b64decode(data)
-        with open(f'{Config.Filepath.DATA_IN.value}/{Config.Filepath.DATA_OUT_FILENAME.value}.pdf', 'wb') as file:
+        with open(f'{Config.Filepath.DATA_IN.value}/{filename}.pdf', 'wb') as file:
             file.write(data)
-        response = RedirectResponse(f"/data/process/{token}", 302)
+        Config.Indexer.VALUE += 1 #Increment file-index
+        response = RedirectResponse(f"/data/process/{token}/{filename}",302)
         return response
     else:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Unauthorized access...",
+            detail="401 - Unauthorized access",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-@app.get("/data/process/{token}")
-async def get_data(token):
+@app.get("/data/process/{token}/{filename}")
+async def get_data(token,filename):
     user = await get_current_user(token)
     if user != None:
-        Transform_Data.transform_all()
-        QR_code_message = QR_Interpreter_WeChat.read_all_files()
+        Transform_Data.transform_file(filename)
+        QR_code_message = QR_Interpreter_WeChat.read_file(filename)
         return QR_code_message
     else:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Unauthorized access...",
+            detail="401 - Unauthorized access",
             headers={"WWW-Authenticate": "Bearer"},
         )
 

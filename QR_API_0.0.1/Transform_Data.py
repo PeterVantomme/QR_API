@@ -1,4 +1,4 @@
-# Processeren van PDF voor het verkrijgen van een image voor de QR-code
+# Process input-pdf to extract QR-code and other pages
 ## Imports & Globals
 import Config
 import os
@@ -11,33 +11,34 @@ IMAGE_DIRECTORY = Config.Filepath.RAW_IMAGES.value
 DOCUMENT_DIRECTORY = Config.Filepath.DOCUMENTS.value
 QR_IMAGE_DIRECTORY = Config.Filepath.TRANSFORMED_IMAGES.value
 
-## Transformaties
+## Transform methods
+### Transforming the first page to QR-png
 def transform_pdf_to_png(filename):
-    #Converteren van voorblad naar PNG
-    PDF = fitz.open(DATA_DIRECTORY+"/"+filename)
+    PDF = fitz.open(f'{DATA_DIRECTORY}/{filename}.pdf')
     image_list = PDF.get_page_images(0)
-    imagefile = fitz.Pixmap(PDF, image_list[0][0])
+    imagefile = fitz.Pixmap(PDF, image_list[0][0]) #First image in document = First page = QR-code
     imagefile.save(f'{IMAGE_DIRECTORY}/{filename}.png')
-    
+
+### Using opencv transformations to make QR-code more readable for system    
 def transform_png(filename):
-    # Transformeren van afbeelding om QR-code leesbaarder te maken
-    image = cv2.imread(IMAGE_DIRECTORY+"/"+filename)
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) #Image naar greyscale veranderen
-    blur = cv2.GaussianBlur(gray, (11,11), 0) #Blurren om ruis te verminderen
-    thresh = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1] #Image naar zwart-wit contrast
+    image = cv2.imread(f'{IMAGE_DIRECTORY}/{filename}.png')
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    blur = cv2.GaussianBlur(gray, (11,11), 0)
+    thresh = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
     
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5,5)) #Kernel opbouwen voor het transformeren van de afbeelding
-    close = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=5) #Kernel zorgt ervoor dat zwarte vlekken in voorgrond verdwijnen. (~fill)
-    temp_image = cv2.threshold(close, 0, 255, cv2.THRESH_BINARY_INV)[1] #Afbeelding inverteren zodat QR-code terug leesbaar wordt.
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5,5))
+    close = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=5) 
+    temp_image = cv2.threshold(close, 0, 255, cv2.THRESH_BINARY_INV)[1]
 
-    cv2.imwrite(f'{QR_IMAGE_DIRECTORY}/{filename}',temp_image)
+    cv2.imwrite(f'{QR_IMAGE_DIRECTORY}/{filename}.png',temp_image)
 
+## Cleanup
 def cleanup(file):
-    #Schoonmaken van temporary directories
-    os.remove(IMAGE_DIRECTORY+"/"+file+".png")
+    os.remove(f'{IMAGE_DIRECTORY}/{file}.png')
     
 def remove_first_page(file):    
-    with open(DATA_DIRECTORY+"/"+file,'rb') as f:
+    #This class removes the first page of the file in order to create a document without the QR-code.
+    with open(f'{DATA_DIRECTORY}/{file}.pdf','rb') as f:
         information = [2, PdfFileReader(f).getNumPages()]
         pdf_writer = PdfFileWriter()
         start = information[0]
@@ -45,25 +46,19 @@ def remove_first_page(file):
         while start<=end:
             pdf_writer.addPage(PdfFileReader(f).getPage(start-1))
             start+=1
-        output_filename = DATA_DIRECTORY+"/"+"cleared_"+file
+        output_filename = f'{DATA_DIRECTORY}/cleared_{file}.pdf'
         with open(output_filename,'wb') as out:
             pdf_writer.write(out)
 
-def transform_all():
-    ## Verzamelen van te processeren bestanden
-    files = os.listdir(DATA_DIRECTORY)
-
-    if len(files)==0:
-        None #No new files: Do nothing
-    else:    
-        for file in files:
-            if "cleared" in file:
-                cleanup(file)
-                break
-            else:
-                transform_pdf_to_png(file)
-                remove_first_page(file)
-                transform_png(file+".png")
-            cleanup(file)
+## Main method (called by API main.py file)
+def transform_file(filename):
+    file = filename
+    if "cleared" in file:
+        cleanup(file)
+    else:
+        transform_pdf_to_png(file)
+        remove_first_page(file)
+        transform_png(file)
+        cleanup(file)
 
             
