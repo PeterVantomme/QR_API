@@ -1,8 +1,6 @@
 import base64
-from http.client import CONFLICT
 import json
 from datetime import timedelta
-from os import access
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
