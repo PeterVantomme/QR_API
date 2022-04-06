@@ -14,10 +14,14 @@ QR_IMAGE_DIRECTORY = Config.Filepath.TRANSFORMED_IMAGES.value
 ## Transform methods
 ### Transforming the first page to QR-png
 def transform_pdf_to_png(filename):
-    PDF = fitz.open(f'{DATA_DIRECTORY}/{filename}.pdf')
-    image_list = PDF.get_page_images(0)
-    imagefile = fitz.Pixmap(PDF, image_list[0][0]) #First image in document = First page = QR-code
-    imagefile.save(f'{IMAGE_DIRECTORY}/{filename}.png')
+    try:
+        PDF = fitz.open(f'{DATA_DIRECTORY}/{filename}.pdf')
+        image_list = PDF.get_page_images(0)
+        imagefile = fitz.Pixmap(PDF, image_list[0][0]) #First image in document = First page = QR-code
+        imagefile.save(f'{IMAGE_DIRECTORY}/{filename}.png')
+        return None
+    except fitz.FileDataError:
+        return fitz.FileDataError
 
 ### Using opencv transformations to make QR-code more readable for system    
 def transform_png(filename):
@@ -56,7 +60,8 @@ def transform_file(filename):
     if "cleared" in file:
         cleanup(file)
     else:
-        transform_pdf_to_png(file)
+        Error = transform_pdf_to_png(file)
+        if Error == fitz.FileDataError: return Error
         remove_first_page(file)
         transform_png(file)
         cleanup(file)

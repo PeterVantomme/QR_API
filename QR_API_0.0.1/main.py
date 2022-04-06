@@ -1,4 +1,5 @@
 import base64
+import binascii
 import json
 from datetime import timedelta
 
@@ -76,12 +77,17 @@ async def parse_input(token, data: bytes = Depends(parse_body)):
     user = await get_current_user(token)
     filename = FILENAME+str(Config.Indexer.VALUE+1)
     if user != None:
-        data = base64.b64decode(data)
-        with open(f'{Config.Filepath.DATA_IN.value}/{filename}.pdf', 'wb') as file:
-            file.write(data)
-        Config.Indexer.VALUE += 1 #Increment file-index
-        response = RedirectResponse(f"/data/process/{token}/{filename}",302)
-        return response
+        try:
+            data = base64.b64decode(data)
+            with open(f'{Config.Filepath.DATA_IN.value}/{filename}.pdf', 'wb') as file:
+                file.write(data)
+            Config.Indexer.VALUE += 1 #Increment file-index
+            response = RedirectResponse(f"/data/process/{token}/{filename}",302)
+            return response
+        except binascii.Error:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+            detail="400 - Incorrect body, did u encode the PDF-document to base64?",
+            headers={"WWW-Authenticate": "Bearer"})
     else:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -92,16 +98,23 @@ async def parse_input(token, data: bytes = Depends(parse_body)):
 @app.get("/data/process/{token}/{filename}")
 async def get_data(token,filename):
     user = await get_current_user(token)
-    if user != None:
-        Transform_Data.transform_file(filename)
-        QR_code_message = QR_Interpreter_WeChat.read_file(filename)
-        return QR_code_message
-    else:
+    if user == None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="401 - Unauthorized access",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    else:
+        Error = Transform_Data.transform_file(filename)
+        if Error == None:
+            QR_code_message = QR_Interpreter_WeChat.read_file(filename)
+            return QR_code_message
+        else:
+            raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="400 - Can't read PDF document",
+            headers={"WWW-Authenticate": "Bearer"},)
+        
 
 if __name__ == "__main__":
     app = FastAPI()
