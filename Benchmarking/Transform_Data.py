@@ -1,9 +1,9 @@
 # Processeren van PDF voor het verkrijgen van een image voor de QR-code
 ## Imports & Globals
-DATA_DIRECTORY = "Benchmarking/Data"
-IMAGE_DIRECTORY = "Benchmarking/$Temp_Images"
-DOCUMENT_DIRECTORY = "Benchmarking/$Temp_Documents"
-QR_IMAGE_DIRECTORY = "Benchmarking/$Temp_Images_for_QRReading"
+DATA_DIRECTORY = "Data"
+IMAGE_DIRECTORY = "$Temp_Images"
+DOCUMENT_DIRECTORY = "$Temp_Documents"
+QR_IMAGE_DIRECTORY = "$Temp_Images_for_QRReading"
 
 import os
 import fitz

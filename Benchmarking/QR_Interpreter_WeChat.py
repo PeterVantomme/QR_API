@@ -14,12 +14,12 @@ from Cryptodome.Cipher import AES
 from phpserialize import loads
 
 KEY = b'EDnpXl5oxi9+XHjTUbTwMg98jTeCt4tnJx5LaUtanME='
-QR_DIRECTORY = 'Benchmarking/$Temp_Images_for_QRReading'
+QR_DIRECTORY = '$Temp_Images_for_QRReading'
 
-DETECTOR_PT_PATH = 'Benchmarking/Models/WeChat/detect.prototxt'
-SR_PT_PATH = 'Benchmarking/Models/WeChat/sr.prototxt'
-DETECTOR_CAFFE_PATH = 'Benchmarking/Models/WeChat/detect.caffemodel'
-SR_CAFFE_PATH = 'Benchmarking/Models/WeChat/sr.caffemodel'
+DETECTOR_PT_PATH = 'Models/WeChat/detect.prototxt'
+SR_PT_PATH = 'Models/WeChat/sr.prototxt'
+DETECTOR_CAFFE_PATH = 'Models/WeChat/detect.caffemodel'
+SR_CAFFE_PATH = 'Models/WeChat/sr.caffemodel'
 
 RED = (0,0,255)
 GREEN = (0,255,0)
@@ -91,12 +91,11 @@ def read_all_files():
             result = process_QR(img).encode("utf8")
             return_value = decrypt_message(result)
             decrypted_QR_Replies[image]=return_value
-            cleanup(image)
         except FileNotFoundError:
             print("A configuration or image file could not be found, please check the file structure's integrity...")
             continue
         except ValueError:
             print("The QR-code is too damaged to be read or the key has been changed...")
             continue
-    
+        cleanup(image)
     return decrypted_QR_Replies

@@ -6,7 +6,7 @@ import QR_Interpreter_WeChat
 import Transform_Data
 
 app = FastAPI()
-FILEPATH_PDF = "Benchmarking/Data"
+FILEPATH_PDF = "Data"
 
 @app.get("/")
 async def main():
