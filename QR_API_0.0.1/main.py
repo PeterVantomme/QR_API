@@ -1,29 +1,58 @@
-from datetime import timedelta
-import Config
-import json
 import base64
+from http.client import CONFLICT
+import json
+from datetime import timedelta
+from os import access
+
+from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi import Depends, FastAPI, HTTPException, status, Request 
 from fastapi.security import OAuth2PasswordBearer
+from jose import jwt, JWTError
 from passlib.context import CryptContext
-from Models.Site.User import User, Authorised_users
-from Models.Site.Token import Token
-from Security import Security as sec
-import Transform_Data
+
+import Config
 import QR_Interpreter_WeChat
+import Transform_Data
+from Models.Site.Token import TokenData
+from Models.Site.User import Authorised_users
+from Security import Security as sec
 
-# to get a string like this run:
-# openssl rand -hex 32
 ACCESS_TOKEN_EXPIRE_DAYS = Config.Auth.AUTH_TIME.value
-
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 app = FastAPI()
 
+#Byte body handler
 async def parse_body(request: Request):
     data: bytes = await request.body()
     return data
+
+#Security handler
+async def get_current_user(token):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, Config.Auth.AUTH_KEY.value, algorithms=Config.Auth.AUTH_ALG.value)
+        username = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+        token_data = TokenData(username=username)
+        return token_data
+    except FileExistsError:
+        print("no")
+    '''
+    except JWTError:
+        raise credentials_exception
+    user = sec.get_user(Authorised_users, username=token_data.username)
+    if user is None:
+        raise credentials_exception
+    return user
+    '''
+
 
 @app.get("/")
 def get_home():
@@ -31,7 +60,8 @@ def get_home():
 
 @app.post("/token")
 async def login_for_access_token(data: bytes = Depends(parse_body)):
-    credentials = json.loads(base64.b64decode(data))
+    credentials = base64.b64decode(data.decode("utf8"))
+    credentials = json.loads(credentials.decode("utf8").replace("\\","").replace('"{',"{").replace('}"',"}")) #Dict gets malformed during transfer for some reason
     security = sec(app, oauth2_scheme, pwd_context)
     user = security.authenticate_user(Authorised_users, credentials.get("username"), credentials.get("password"))
     if not user:
@@ -44,26 +74,37 @@ async def login_for_access_token(data: bytes = Depends(parse_body)):
     access_token = security.create_access_token(
         data={"sub": user.get("username")}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return access_token
 
 @app.post("/data/{token}")
 async def parse_input(token, data: bytes = Depends(parse_body)):
-    token = token
-    user: str = Depends(sec(app, oauth2_scheme, pwd_context).get_current_user(token))
-    data = base64.b64decode(data)
-    with open(f'{Config.Filepath.DATA_IN.value}/{Config.Filepath.DATA_OUT_FILENAME.value}.pdf', 'wb') as file:
-        file.write(data)
-    response = RedirectResponse("/process", 302, headers={"token":token})
-    return user #change to response when debugging is done
+    user = await get_current_user(token)
+    if user != None:
+        data = base64.b64decode(data)
+        with open(f'{Config.Filepath.DATA_IN.value}/{Config.Filepath.DATA_OUT_FILENAME.value}.pdf', 'wb') as file:
+            file.write(data)
+        response = RedirectResponse(f"/data/process/{token}", 302)
+        return response
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized access...",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 @app.get("/data/process/{token}")
-def get_data(token):
-    token = token
-    user: str = Depends(sec(app, oauth2_scheme, pwd_context).get_current_user(token))
-    sec(app,oauth2_scheme,pwd_context).get_current_user(token)
-    Transform_Data.transform_all()
-    QR_code_message = QR_Interpreter_WeChat.read_all_files()
-    return QR_code_message
+async def get_data(token):
+    user = await get_current_user(token)
+    if user != None:
+        Transform_Data.transform_all()
+        QR_code_message = QR_Interpreter_WeChat.read_all_files()
+        return QR_code_message
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized access...",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 if __name__ == "__main__":
     app = FastAPI()

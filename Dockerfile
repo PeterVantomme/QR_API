@@ -21,5 +21,5 @@ COPY QR_API_0.0.1/Transform_Data.py /QR_API_0.0.1/Transform_Data.py
 RUN apt-get update
 RUN apt-get install ffmpeg libsm6 libxext6  -y
 RUN pip install PyPDF2
-CMD gunicorn main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:80
+CMD gunicorn main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:80 --enable-stdio-inheritance --log-level "debug"
 EXPOSE 80:80
