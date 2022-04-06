@@ -15,3 +15,4 @@ To find out how to use it, it's best to look at it's implementations in test.py.
 > - In the Models/Site folder, there are models which contain userdata, hashed passwords and other details.
 > - The files starting with "$" and the Data folder are emptied after each request in order to preserve space.
 > - The Models/WeChat folder contains important models that are used by the QR-scanner.
+> - Benchmark folder is useful for testing out new things.
