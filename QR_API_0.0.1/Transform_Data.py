@@ -43,16 +43,24 @@ def cleanup(file):
 def remove_first_page(file):    
     #This class removes the first page of the file in order to create a document without the QR-code.
     with open(f'{DATA_DIRECTORY}/{file}.pdf','rb') as f:
-        information = [2, PdfFileReader(f).getNumPages()]
-        pdf_writer = PdfFileWriter()
-        start = information[0]
-        end = information[1]
-        while start<=end:
-            pdf_writer.addPage(PdfFileReader(f).getPage(start-1))
-            start+=1
-        output_filename = f'{DATA_DIRECTORY}/cleared_{file}.pdf'
-        with open(output_filename,'wb') as out:
-            pdf_writer.write(out)
+        if PdfFileReader(f).getNumPages() > 1:
+            information = [2, PdfFileReader(f).getNumPages()]
+            pdf_writer = PdfFileWriter()
+            start = information[0]
+            end = information[1]
+            while start<=end:
+                pdf_writer.addPage(PdfFileReader(f).getPage(start-1))
+                start+=1
+            output_filename = f'{DATA_DIRECTORY}/cleared_{file}.pdf'
+            with open(output_filename,'wb') as out:
+                pdf_writer.write(out)
+        else:
+            #Document only has one page, thus no need to remove the first page.
+            pdf_writer = PdfFileWriter
+            pdf_writer.addPage(PdfFileReader(f).getPage(0))
+            output_filename = f'{DATA_DIRECTORY}/cleared_{file}.pdf'
+            with open(output_filename,'wb') as out:
+                pdf_writer.write(out)
 
 ## Main method (called by API main.py file)
 def transform_file(filename):

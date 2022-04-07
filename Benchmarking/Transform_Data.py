@@ -21,14 +21,18 @@ def transform_png(filename):
     # Transformeren van afbeelding om QR-code leesbaarder te maken
     image = cv2.imread(IMAGE_DIRECTORY+"/"+filename)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) #Image naar greyscale veranderen
-    blur = cv2.GaussianBlur(gray, (11,11), 0) #Blurren om ruis te verminderen
+    blur = cv2.GaussianBlur(gray, (3,3), 0) #Blurren om ruis te verminderen
     thresh = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1] #Image naar zwart-wit contrast
     
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5,5)) #Kernel opbouwen voor het transformeren van de afbeelding
-    close = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=5) #Kernel zorgt ervoor dat zwarte vlekken in voorgrond verdwijnen. (~fill)
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3,3)) #Kernel opbouwen voor het transformeren van de afbeelding
+    close = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=3) #Kernel zorgt ervoor dat zwarte vlekken in voorgrond verdwijnen. (~fill)
     temp_image = cv2.threshold(close, 0, 255, cv2.THRESH_BINARY_INV)[1] #Afbeelding inverteren zodat QR-code terug leesbaar wordt.
 
     cv2.imwrite(f'{QR_IMAGE_DIRECTORY}/{filename}',temp_image)
+"""    cv2.imshow('blur',blur)
+    cv2.imshow('thresh',thresh)
+    cv2.imshow('close',close)
+    cv2.waitKey(0)"""
 
 def cleanup(file):
     #Schoonmaken van temporary directories
