@@ -10,17 +10,12 @@ import base64
 import json
 from Cryptodome.Cipher import AES
 from phpserialize import loads
+from pyzbar.pyzbar import decode
 
 ###Globals
 KEY = Config.Auth.KEY.value
 QR_DIRECTORY = Config.Filepath.TRANSFORMED_IMAGES.value
 DATA_DIRECTORY = Config.Filepath.DATA_IN.value
-
-# Model used by WeChat OpenCV scanner (improves existing opencv model)
-DETECTOR_PT_PATH = 'Models/WeChat/detect.prototxt'
-SR_PT_PATH = 'Models/WeChat/sr.prototxt'
-DETECTOR_CAFFE_PATH = 'Models/WeChat/detect.caffemodel'
-SR_CAFFE_PATH = 'Models/WeChat/sr.caffemodel'
 
 ## Decrypting
 def decrypt(laravelEncrypedStringBase64, laravelAppKeyBase64):
@@ -60,9 +55,7 @@ def decrypt_message(raw_message):
 
 ## Reading the QR-code
 def process_QR(img):
-    detector = cv2.wechat_qrcode_WeChatQRCode(DETECTOR_PT_PATH, DETECTOR_CAFFE_PATH, SR_PT_PATH, SR_CAFFE_PATH)
-    res,_ = detector.detectAndDecode(img)
-    return res[0]
+    return decode(img)[0].data.decode("utf-8")
 
 def cleanup(filename):
     for file in os.listdir(QR_DIRECTORY):
@@ -79,7 +72,7 @@ def cleanup(filename):
 ## Main method (called by API main.py)
 def read_file(filename):
     img = cv2.imread(f"{QR_DIRECTORY}/{filename}.png")
-    result = process_QR(img).encode("utf8")
+    result = process_QR(img)
     return_value = decrypt_message(result)
 
     with open(f"{DATA_DIRECTORY}/cleared_{filename}.pdf", "rb") as pdf_file:

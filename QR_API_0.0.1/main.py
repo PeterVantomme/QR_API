@@ -10,7 +10,7 @@ from jose import jwt, JWTError
 from passlib.context import CryptContext
 
 import Config
-import QR_Interpreter_WeChat
+import QR_Interpreter_ZBAR
 import Transform_Data
 from Models.Site.Token import TokenData
 from Models.Site.User import Authorised_users
@@ -107,7 +107,7 @@ async def get_data(token,filename):
     else:
         Error = Transform_Data.transform_file(filename)
         if Error == None:
-            QR_code_message = QR_Interpreter_WeChat.read_file(filename)
+            QR_code_message = QR_Interpreter_ZBAR.read_file(filename)
             return QR_code_message
         else:
             raise HTTPException(

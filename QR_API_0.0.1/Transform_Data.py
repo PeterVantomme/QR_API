@@ -2,8 +2,12 @@
 ## Imports & Globals
 import Config
 import os
+import numpy as np
 import fitz
 import cv2
+import shutil
+
+
 from PyPDF2  import PdfFileReader, PdfFileWriter
 
 DATA_DIRECTORY = Config.Filepath.DATA_IN.value
@@ -26,15 +30,33 @@ def transform_pdf_to_png(filename):
 ### Using opencv transformations to make QR-code more readable for system    
 def transform_png(filename):
     image = cv2.imread(f'{IMAGE_DIRECTORY}/{filename}.png')
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    blur = cv2.GaussianBlur(gray, (11,11), 0)
-    thresh = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
-    
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5,5))
-    close = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=5) 
-    temp_image = cv2.threshold(close, 0, 255, cv2.THRESH_BINARY_INV)[1]
-
-    cv2.imwrite(f'{QR_IMAGE_DIRECTORY}/{filename}.png',temp_image)
+    greyscale_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    kernel = np.array([[0, 0, 0],
+                    [0, 1, 0],
+                    [0, 0, 0]])
+    greyscale_image = cv2.filter2D(src=greyscale_image, ddepth=-1, kernel=kernel)
+    cross_kernel=cv2.getStructuringElement(cv2.MORPH_CROSS,(5,5))
+    thresh = cv2.threshold(greyscale_image,200,255,cv2.THRESH_BINARY)[1]
+    thresh = cv2.cvtColor(thresh, cv2.COLOR_HSV2RGB)
+    thresh = cv2.threshold(thresh,200,255,cv2.THRESH_BINARY)[1]
+    thresh = cv2.cvtColor(thresh, cv2.COLOR_RGB2GRAY)
+    thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, cross_kernel)
+    kernel = np.array([[0, -2, 0],
+                    [-2, 10, -2],
+                    [0, -2, 0]])
+    thresh = cv2.filter2D(src=thresh, ddepth=-1, kernel=kernel)
+    converted_image = thresh
+    converted_image = cv2.cvtColor(converted_image, cv2.COLOR_HSV2BGR)
+    converted_image = cv2.threshold(converted_image, 0, 255, cv2.THRESH_BINARY_INV)[1]
+    converted_image = cv2.cvtColor(converted_image, cv2.COLOR_BGR2GRAY)
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3,3))
+    converted_image = cv2.morphologyEx(converted_image, cv2.MORPH_CLOSE, kernel, iterations=2) 
+    converted_image = cv2.threshold(converted_image, 192, 255, cv2.THRESH_BINARY)[1]
+    kernel = np.array([[-1, -1, -1],
+                    [-1, 18, -1],
+                    [-1, -1, -1]])
+    converted_image = cv2.filter2D(src=converted_image, ddepth=5, kernel=kernel)
+    cv2.imwrite(f'{QR_IMAGE_DIRECTORY}/{filename}.png',converted_image)
 
 ## Cleanup
 def cleanup(file):
@@ -56,11 +78,7 @@ def remove_first_page(file):
                 pdf_writer.write(out)
         else:
             #Document only has one page, thus no need to remove the first page.
-            pdf_writer = PdfFileWriter
-            pdf_writer.addPage(PdfFileReader(f).getPage(0))
-            output_filename = f'{DATA_DIRECTORY}/cleared_{file}.pdf'
-            with open(output_filename,'wb') as out:
-                pdf_writer.write(out)
+            shutil.copyfile(f'{DATA_DIRECTORY}/{file}.pdf', f'{DATA_DIRECTORY}/cleared_{file}.pdf')
 
 ## Main method (called by API main.py file)
 def transform_file(filename):
