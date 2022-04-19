@@ -1,8 +1,9 @@
 import base64
 import binascii
 import json
-from datetime import timedelta
 
+from cryptography.fernet import Fernet
+from datetime import timedelta
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordBearer
@@ -60,7 +61,7 @@ async def login_for_access_token(data: bytes = Depends(parse_body)):
         raise error_reply.INVALID_CREDENTIALS.value
     access_token_expires = timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
     access_token = security.create_access_token(
-        data={"sub": user.get("username")}, expires_delta=access_token_expires
+        data={"sub": user}, expires_delta=access_token_expires
     )
     return access_token
 
@@ -94,6 +95,30 @@ async def get_data(token,filename):
         else:
             raise error_reply.UNREADABLE_FILE.value
         
+@app.post("/changepassword/{token}") #Needs a dict with old and new encrypted password using Fernet as body.
+async def change_password(token, credential_dict: bytes = Depends(parse_body)):
+    creds = json.loads(base64.b64decode(Fernet(Config.Auth.KEY.value).decrypt(credential_dict)))
+    user = await get_current_user(token)
+    if user == None:
+        raise error_reply.INVALID_CREDENTIALS.value
+    else:
+        username = jwt.decode(token, Config.Auth.AUTH_KEY.value, algorithms=Config.Auth.AUTH_ALG.value).get("sub")
+        Authorised_users().change_password(username, pwd_context.hash(creds.get("new_password")))
+    return True
+        
+
+@app.get("/passhash/{password}")
+def get_hashed_pw(password):
+    return pwd_context.hash(password)
+
+@app.get("/userlist/{token}")
+async def get_user_list(token):
+    user = await get_current_user(token)
+    if user == None:
+        raise error_reply.INVALID_CREDENTIALS.value
+    else:
+        return Authorised_users().get()
+
 
 if __name__ == "__main__":
     app = FastAPI()

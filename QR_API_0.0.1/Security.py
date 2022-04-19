@@ -21,14 +21,14 @@ class Security():
         return self.pwd_context.hash(password)
 
     def get_user(self, authorised_users, username):
-        username_verified =  authorised_users().get().get(username) if username in authorised_users().get().keys() else None
+        username_verified =  username if username in authorised_users().get().keys() else None
         return username_verified
 
     def authenticate_user(self, authorised_users, username: str, password: str):
         user = self.get_user(authorised_users, username)
         if user is None:
             raise HTTPException(status_code=400, detail="400 - Incorrect username or password")
-        if not self.verify_password(password, user.get('hashed_password')):
+        if not self.verify_password(password, authorised_users().get().get(user)):
             raise HTTPException(status_code=400, detail="400 - Incorrect username or password")
         return user
 

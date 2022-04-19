@@ -1,9 +1,10 @@
 import base64
 import json
 import unittest
+import time
 import requests
 
-class helper():
+class helper_data():
 
     def wrong_password_username(self) -> str:
         login_dict = json.dumps({"username":"devt","password":"secrett"})
@@ -22,7 +23,7 @@ class helper():
         return access_token
 
     def wrong_username(self) -> str:
-        login_dict = json.dumps({"username":"devt","password":"Titeca_Admin_1234"})
+        login_dict = json.dumps({"username":"devt","password":"secret"})
         body = base64.b64encode(login_dict.encode())
 
         credentials = requests.post("http://127.0.0.1:1600/token", data=body)
@@ -52,13 +53,13 @@ class helper():
             return reply.status_code," ",reply.content
 
     def run_correct_post_request(self,access_token):
-        with open("test_document_heavy_spots.pdf", "rb") as pdf_file:
+        with open("test_document_shifted.pdf", "rb") as pdf_file:
             encoded = base64.b64encode(pdf_file.read())
         body=bytes(encoded)
         return(self.run_post(access_token, body))
     
     def run_wrong_auth_post_request(self,access_token):
-        with open("test_document_heavy_spots.pdf", "rb") as pdf_file:
+        with open("test_document_shifted.pdf", "rb") as pdf_file:
             encoded = base64.b64encode(pdf_file.read())
         body=bytes(encoded)
         access_token = access_token+"12"
@@ -66,30 +67,39 @@ class helper():
 
     def run_wrong_body_post_request(self,access_token):
         return(self.run_post(access_token, "12345678"))
-        
+
+class helper_admin():
+    def change_password(current_pw, new_pw):
+        token = helper_data().correct_credentials()
+        reply = requests.post("https://127.0.0.1:1600/admin/change_password", data=json.dumps({"current_pw":current_pw,"new_pw":new_pw}), headers={"Authorization":f"Bearer {token}"})
+        return reply.status_code, reply.content
+
 class test_token(unittest.TestCase):
     def test_wrong_password_username(self):
-        self.assertEqual(helper().wrong_password_username(), "{'detail': '400 - Incorrect username or password'}")
+        self.assertEqual(helper_data().wrong_password_username(), "{'detail': '400 - Incorrect username or password'}")
 
     def test_wrong_password(self):
-        self.assertEqual(helper().wrong_password(), "{'detail': '400 - Incorrect username or password'}")
+        self.assertEqual(helper_data().wrong_password(), "{'detail': '400 - Incorrect username or password'}")
 
     def test_correct_credentials(self):
-        self.assertNotIn("detail", helper().correct_credentials())
+        self.assertNotIn("detail", helper_data().correct_credentials())
 
 class test_post(unittest.TestCase):
+    #print(helper_admin.change_password())
     def test_wrong_credentials_post_request(self):
-        self.assertEqual(helper().run_correct_post_request(helper().wrong_password_username()), {'detail': '401 - Could not validate credentials - Invalid token'})
+        self.assertEqual(helper_data().run_correct_post_request(helper_data().wrong_password_username()), {'detail': '401 - Could not validate credentials - Invalid token'})
 
     def test_wrong_auth_post_request(self):
-        self.assertEqual(helper().run_wrong_auth_post_request(helper().correct_credentials()), {'detail': '401 - Could not validate credentials - Invalid token'})
+        self.assertEqual(helper_data().run_wrong_auth_post_request(helper_data().correct_credentials()), {'detail': '401 - Could not validate credentials - Invalid token'})
 
     def test_wrong_body_post_request(self):
-        self.assertEqual(helper().run_wrong_body_post_request(helper().correct_credentials()), {'detail': "400 - Can't read PDF document"})
+        self.assertEqual(helper_data().run_wrong_body_post_request(helper_data().correct_credentials()), {'detail': "400 - Can't read PDF document"})
     
     def test_correct_post_request(self):
-        reply = helper().run_correct_post_request(helper().correct_credentials())
-        print(reply)
+        time_point_1 = time.perf_counter()
+        reply = helper_data().run_correct_post_request(helper_data().correct_credentials())
+        time_point_2 = time.perf_counter()
+        print("executed in: ", time_point_2 - time_point_1," seconds.")
         self.assertNotIn("detail", reply)
 
 if __name__ == '__main__':

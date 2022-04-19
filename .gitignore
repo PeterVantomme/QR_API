@@ -1,4 +1,6 @@
 *.pdf
+*.db
+exp.py
 temp.py
 __pycache__
 Benchmarking

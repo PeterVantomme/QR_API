@@ -1,4 +1,6 @@
 from pydantic import BaseModel
+import sqlite3
+
 class User(BaseModel):
     username : str
     enabled: bool
@@ -8,16 +10,15 @@ class UserInDB(User):
 
 class Authorised_users():
     def __init__(self):
-        self.userdict = {
-            "dev": {
-                "username": "dev",
-                "hashed_password": "$2b$12$rOmoIVRsgQ2O5OuFu1sKP.X4adZFB8dQSPJOusAox.6rEM8k9kBau",
-            },
-            "test":{
-                "username": "test",
-                "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
-            }
-        }
+        self.conn = sqlite3.connect('Models/Site/API_DB.db')
+        self.cursor = self.conn.cursor()
 
     def get(self):
-        return self.userdict
+        data = dict(self.cursor.execute("SELECT * FROM userdata;").fetchall())
+        self.conn.close()
+        return data
+
+    def change_password(self, username, new_password):
+        self.cursor.execute("UPDATE userdata SET password_hash = ? WHERE username = ?;",(new_password,username))
+        self.conn.commit()
+        self.conn.close()
