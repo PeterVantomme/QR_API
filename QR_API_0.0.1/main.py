@@ -3,7 +3,7 @@ import binascii
 import json
 from datetime import timedelta
 
-from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
@@ -13,6 +13,7 @@ import Config
 import QR_Interpreter_ZBAR
 import Transform_Data
 from Models.Site.Token import TokenData
+from Errors import Error as error_reply
 from Models.Site.User import Authorised_users
 from Security import Security as sec
 
@@ -29,26 +30,21 @@ async def parse_body(request: Request):
 
 #Security handler
 async def get_current_user(token):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="401 - Could not validate credentials - Invalid token",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    credentials_exception = error_reply.INVALID_TOKEN.value
     try:
         payload = jwt.decode(token, Config.Auth.AUTH_KEY.value, algorithms=Config.Auth.AUTH_ALG.value)
         username = payload.get("sub")
         if username is None:
             raise credentials_exception
         token_data = TokenData(username=username)
-        return token_data
+        user = sec(app, oauth2_scheme, pwd_context).get_user(Authorised_users, username=token_data.username)
+        if user is None:
+            raise credentials_exception
+        return user
     except FileExistsError:
-        print("no")
+        raise error_reply.INVALID_FILE.value
     except JWTError:
         raise credentials_exception
-    user = sec.get_user(Authorised_users, username=token_data.username)
-    if user is None:
-        raise credentials_exception
-    return user
 
 @app.get("/")
 def get_home():
@@ -61,11 +57,7 @@ async def login_for_access_token(data: bytes = Depends(parse_body)):
     security = sec(app, oauth2_scheme, pwd_context)
     user = security.authenticate_user(Authorised_users, credentials.get("username"), credentials.get("password"))
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="401 - Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise error_reply.INVALID_CREDENTIALS.value
     access_token_expires = timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
     access_token = security.create_access_token(
         data={"sub": user.get("username")}, expires_delta=access_token_expires
@@ -85,35 +77,22 @@ async def parse_input(token, data: bytes = Depends(parse_body)):
             response = RedirectResponse(f"/data/process/{token}/{filename}",302)
             return response
         except binascii.Error:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-            detail="400 - Incorrect body, did u encode the PDF-document to base64?",
-            headers={"WWW-Authenticate": "Bearer"})
+            raise error_reply.ENCODE_ERROR.value
     else:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="401 - Unauthorized access",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise error_reply.INVALID_CREDENTIALS.value
 
 @app.get("/data/process/{token}/{filename}")
 async def get_data(token,filename):
     user = await get_current_user(token)
     if user == None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="401 - Unauthorized access",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise error_reply.INVALID_CREDENTIALS.value
     else:
         Error = Transform_Data.transform_file(filename)
         if Error == None:
             QR_code_message = QR_Interpreter_ZBAR.read_file(filename)
             return QR_code_message
         else:
-            raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="400 - Can't read PDF document",
-            headers={"WWW-Authenticate": "Bearer"},)
+            raise error_reply.UNREADABLE_FILE.value
         
 
 if __name__ == "__main__":

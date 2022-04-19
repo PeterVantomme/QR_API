@@ -7,7 +7,6 @@ import fitz
 import cv2
 import shutil
 
-
 from PyPDF2  import PdfFileReader, PdfFileWriter
 
 DATA_DIRECTORY = Config.Filepath.DATA_IN.value
@@ -35,6 +34,7 @@ def transform_png(filename):
                     [0, 1, 0],
                     [0, 0, 0]])
     greyscale_image = cv2.filter2D(src=greyscale_image, ddepth=-1, kernel=kernel)
+
     cross_kernel=cv2.getStructuringElement(cv2.MORPH_CROSS,(5,5))
     thresh = cv2.threshold(greyscale_image,200,255,cv2.THRESH_BINARY)[1]
     thresh = cv2.cvtColor(thresh, cv2.COLOR_HSV2RGB)
@@ -42,18 +42,21 @@ def transform_png(filename):
     thresh = cv2.cvtColor(thresh, cv2.COLOR_RGB2GRAY)
     thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, cross_kernel)
     kernel = np.array([[0, -2, 0],
-                    [-2, 10, -2],
+                    [-2, 12, -2],
                     [0, -2, 0]])
     thresh = cv2.filter2D(src=thresh, ddepth=-1, kernel=kernel)
-    converted_image = thresh
-    converted_image = cv2.cvtColor(converted_image, cv2.COLOR_HSV2BGR)
+    cv2.imwrite(f"{QR_IMAGE_DIRECTORY}/{filename}.png", thresh)
+    conv_im = cv2.imread(f"{QR_IMAGE_DIRECTORY}/{filename}.png")
+    converted_image = cv2.cvtColor(conv_im, cv2.COLOR_HSV2BGR)
     converted_image = cv2.threshold(converted_image, 0, 255, cv2.THRESH_BINARY_INV)[1]
-    converted_image = cv2.cvtColor(converted_image, cv2.COLOR_BGR2GRAY)
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3,3))
-    converted_image = cv2.morphologyEx(converted_image, cv2.MORPH_CLOSE, kernel, iterations=2) 
+    converted_image = cv2.cvtColor(conv_im, cv2.COLOR_BGR2GRAY)
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2,2))
+    converted_image = cv2.morphologyEx(converted_image, cv2.MORPH_OPEN, kernel, iterations=4) 
+    converted_image = cv2.morphologyEx(converted_image, cv2.MORPH_CLOSE, kernel, iterations=4) 
+    converted_image = cv2.morphologyEx(converted_image, cv2.MORPH_OPEN, kernel, iterations=4) 
     converted_image = cv2.threshold(converted_image, 192, 255, cv2.THRESH_BINARY)[1]
     kernel = np.array([[-1, -1, -1],
-                    [-1, 18, -1],
+                    [-1, 30, -1],
                     [-1, -1, -1]])
     converted_image = cv2.filter2D(src=converted_image, ddepth=5, kernel=kernel)
     cv2.imwrite(f'{QR_IMAGE_DIRECTORY}/{filename}.png',converted_image)
