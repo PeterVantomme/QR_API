@@ -22,7 +22,7 @@ class helper():
         return access_token
 
     def wrong_username(self) -> str:
-        login_dict = json.dumps({"username":"devt","password":"secret"})
+        login_dict = json.dumps({"username":"devt","password":"Titeca_Admin_1234"})
         body = base64.b64encode(login_dict.encode())
 
         credentials = requests.post("http://127.0.0.1:1600/token", data=body)
@@ -30,7 +30,7 @@ class helper():
         return access_token
 
     def correct_credentials(self) -> str:
-        login_dict = json.dumps({"username":"dev","password":"secret"})
+        login_dict = json.dumps({"username":"dev","password":"Titeca_Admin_1234"})
         body = base64.b64encode(login_dict.encode())
 
         credentials = requests.post("http://127.0.0.1:1600/token", data=body)
@@ -52,13 +52,13 @@ class helper():
             return reply.status_code," ",reply.content
 
     def run_correct_post_request(self,access_token):
-        with open("test_document.pdf", "rb") as pdf_file:
+        with open("test_document_heavy_spots.pdf", "rb") as pdf_file:
             encoded = base64.b64encode(pdf_file.read())
         body=bytes(encoded)
         return(self.run_post(access_token, body))
     
     def run_wrong_auth_post_request(self,access_token):
-        with open("test_document.pdf", "rb") as pdf_file:
+        with open("test_document_heavy_spots.pdf", "rb") as pdf_file:
             encoded = base64.b64encode(pdf_file.read())
         body=bytes(encoded)
         access_token = access_token+"12"
@@ -88,7 +88,9 @@ class test_post(unittest.TestCase):
         self.assertEqual(helper().run_wrong_body_post_request(helper().correct_credentials()), {'detail': "400 - Can't read PDF document"})
     
     def test_correct_post_request(self):
-        self.assertNotIn("detail", helper().run_correct_post_request(helper().correct_credentials()))
+        reply = helper().run_correct_post_request(helper().correct_credentials())
+        print(reply)
+        self.assertNotIn("detail", reply)
 
 if __name__ == '__main__':
     unittest.main()

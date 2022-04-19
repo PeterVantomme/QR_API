@@ -11,7 +11,7 @@ class Authorised_users():
         self.userdict = {
             "dev": {
                 "username": "dev",
-                "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
+                "hashed_password": "$2b$12$rOmoIVRsgQ2O5OuFu1sKP.X4adZFB8dQSPJOusAox.6rEM8k9kBau",
             },
             "test":{
                 "username": "test",
