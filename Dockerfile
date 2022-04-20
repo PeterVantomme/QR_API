@@ -2,21 +2,22 @@
 FROM python:3.10.4
 
 # 
-WORKDIR /QR_API_0.0.1
+WORKDIR /QR_API
 # 
-COPY QR_API_0.0.1/requirements.txt /QR_API_0.0.1/requirements.txt
+COPY QR_API/requirements.txt /QR_API/requirements.txt
 
 # 
-RUN pip install --no-cache-dir --upgrade -r /QR_API_0.0.1/requirements.txt
+RUN pip install --no-cache-dir --upgrade -r /QR_API/requirements.txt
 
 # 
-COPY QR_API_0.0.1/$Temp_Documents /QR_API_0.0.1/$Temp_Documents
-COPY QR_API_0.0.1/$Temp_Images /QR_API_0.0.1/$Temp_Images
-COPY QR_API_0.0.1/$Temp_ImagesForQRReading /QR_API_0.0.1/$Temp_ImagesForQRReading
-COPY QR_API_0.0.1/Data /QR_API_0.0.1/Data
-COPY QR_API_0.0.1/Models /QR_API_0.0.1/Models
-COPY QR_API_0.0.1/QR_Interpreter_ZBAR.py /QR_API_0.0.1/QR_Interpreter_ZBAR.py
-COPY QR_API_0.0.1/Transform_Data.py /QR_API_0.0.1/Transform_Data.py
+COPY QR_API/__Temp_Documents /QR_API/__Temp_Documents
+COPY QR_API/__Temp_Images /QR_API/__Temp_Images
+COPY QR_API/__Temp_Images_for_QRReading /QR_API/__Temp_Images_for_QRReading
+COPY QR_API/__Data /QR_API/__Data
+COPY QR_API/Models /QR_API/Models
+COPY QR_API/Modules /QR_API/Modules
+COPY QR_API/main.py /QR_API/main.py
+COPY QR_API/Config.py /QR_API/Config.py
 
 RUN apt-get update
 RUN apt-get install ffmpeg libsm6 libxext6 libzbar0 -y
