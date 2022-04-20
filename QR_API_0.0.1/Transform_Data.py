@@ -2,7 +2,7 @@
 ## Imports & Globals
 import Config
 import os
-import numpy as np
+from numpy import array as narray
 import fitz
 import cv2
 import shutil
@@ -22,6 +22,7 @@ def transform_pdf_to_png(filename):
         image_list = PDF.get_page_images(0)
         imagefile = fitz.Pixmap(PDF, image_list[0][0]) #First image in document = First page = QR-code
         imagefile.save(f'{IMAGE_DIRECTORY}/{filename}.png')
+        del PDF, image_list #deleting variables from memory 
         return None
     except fitz.FileDataError:
         return fitz.FileDataError
@@ -29,37 +30,36 @@ def transform_pdf_to_png(filename):
 ### Using opencv transformations to make QR-code more readable for system    
 def transform_png(filename):
     image = cv2.imread(f'{IMAGE_DIRECTORY}/{filename}.png')
-    greyscale_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-    kernel = np.array([[0, 0, 0],
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    kernel = narray([[0, 0, 0],
                     [0, 1, 0],
                     [0, 0, 0]])
-    greyscale_image = cv2.filter2D(src=greyscale_image, ddepth=-1, kernel=kernel)
+    image = cv2.filter2D(src=image, ddepth=-1, kernel=kernel)
 
     cross_kernel=cv2.getStructuringElement(cv2.MORPH_CROSS,(5,5))
-    thresh = cv2.threshold(greyscale_image,200,255,cv2.THRESH_BINARY)[1]
-    thresh = cv2.cvtColor(thresh, cv2.COLOR_HSV2RGB)
-    thresh = cv2.threshold(thresh,200,255,cv2.THRESH_BINARY)[1]
-    thresh = cv2.cvtColor(thresh, cv2.COLOR_RGB2GRAY)
-    thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, cross_kernel)
-    kernel = np.array([[0, -2, 0],
+    image = cv2.threshold(image,200,255,cv2.THRESH_BINARY)[1]
+    image = cv2.cvtColor(image, cv2.COLOR_HSV2RGB)
+    image = cv2.threshold(image,200,255,cv2.THRESH_BINARY)[1]
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    image = cv2.morphologyEx(image, cv2.MORPH_CLOSE, cross_kernel)
+    kernel = narray([[0, -2, 0],
                     [-2, 12, -2],
                     [0, -2, 0]])
-    thresh = cv2.filter2D(src=thresh, ddepth=-1, kernel=kernel)
-    cv2.imwrite(f"{QR_IMAGE_DIRECTORY}/{filename}.png", thresh)
-    conv_im = cv2.imread(f"{QR_IMAGE_DIRECTORY}/{filename}.png")
-    converted_image = cv2.cvtColor(conv_im, cv2.COLOR_HSV2BGR)
-    converted_image = cv2.threshold(converted_image, 0, 255, cv2.THRESH_BINARY_INV)[1]
-    converted_image = cv2.cvtColor(conv_im, cv2.COLOR_BGR2GRAY)
+    image = cv2.filter2D(src=image, ddepth=-1, kernel=kernel)
+    cv2.imwrite(f"{QR_IMAGE_DIRECTORY}/{filename}.png", image)
+    image = cv2.imread(f"{QR_IMAGE_DIRECTORY}/{filename}.png")
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2,2))
-    converted_image = cv2.morphologyEx(converted_image, cv2.MORPH_OPEN, kernel, iterations=4) 
-    converted_image = cv2.morphologyEx(converted_image, cv2.MORPH_CLOSE, kernel, iterations=4) 
-    converted_image = cv2.morphologyEx(converted_image, cv2.MORPH_OPEN, kernel, iterations=4) 
-    converted_image = cv2.threshold(converted_image, 192, 255, cv2.THRESH_BINARY)[1]
-    kernel = np.array([[-1, -1, -1],
+    image = cv2.morphologyEx(image, cv2.MORPH_OPEN, kernel, iterations=4) 
+    image = cv2.morphologyEx(image, cv2.MORPH_CLOSE, kernel, iterations=4) 
+    image = cv2.morphologyEx(image, cv2.MORPH_OPEN, kernel, iterations=4) 
+    image = cv2.threshold(image, 192, 255, cv2.THRESH_BINARY)[1]
+    kernel = narray([[-1, -1, -1],
                     [-1, 30, -1],
                     [-1, -1, -1]])
-    converted_image = cv2.filter2D(src=converted_image, ddepth=5, kernel=kernel)
-    cv2.imwrite(f'{QR_IMAGE_DIRECTORY}/{filename}.png',converted_image)
+    image = cv2.filter2D(src=image, ddepth=5, kernel=kernel)
+    cv2.imwrite(f'{QR_IMAGE_DIRECTORY}/{filename}.png',image)
+    del image #clearing image variable to help garbage collection
 
 ## Cleanup
 def cleanup(file):
@@ -93,6 +93,4 @@ def transform_file(filename):
         if Error == fitz.FileDataError: return Error
         remove_first_page(file)
         transform_png(file)
-        cleanup(file)
-
             
