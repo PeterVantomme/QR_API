@@ -53,13 +53,13 @@ class helper_data():
             return reply.status_code," ",reply.content
 
     def run_correct_post_request(self,access_token):
-        with open("test_document_shifted.pdf", "rb") as pdf_file:
+        with open("Tests and demos/test_document_shifted.pdf", "rb") as pdf_file:
             encoded = base64.b64encode(pdf_file.read())
         body=bytes(encoded)
         return(self.run_post(access_token, body))
     
     def run_wrong_auth_post_request(self,access_token):
-        with open("test_document_shifted.pdf", "rb") as pdf_file:
+        with open("Tests and demos/test_document_shifted.pdf", "rb") as pdf_file:
             encoded = base64.b64encode(pdf_file.read())
         body=bytes(encoded)
         access_token = access_token+"12"

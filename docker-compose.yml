@@ -1,8 +1,8 @@
-version: "1"
+version: "3.3"
 services:
   web:
-    build: 
+    build:
+      context: ./QR_API
+      dockerfile: Dockerfile 
     ports:
       - "80:80"
-    volumes:
-      - .:QR_API
