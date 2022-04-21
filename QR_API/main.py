@@ -1,5 +1,6 @@
 from base64 import b64decode
 import binascii
+from distutils.log import error
 import json
 import Config
 import Modules.QR_Interpreter_ZBAR as QR_Interpreter_ZBAR
@@ -108,7 +109,12 @@ async def get_data(token,filename):
     else:
         Error = Transform_Data.transform_file(filename)
         if Error == None:
-            QR_code_message = QR_Interpreter_ZBAR.read_file(filename)
+            try:
+                QR_code_message = QR_Interpreter_ZBAR.read_file(filename)
+            except binascii.Error:
+                raise error_reply.NO_QR_DETECTED.value #Means that document might not even contain one.
+            except IndexError:
+                raise error_reply.QR_NOT_FOUND.value #Means that scanner cannot read the QR-code.
             Cleanup(filename)
             ##This code is useful for solving memory problems
             #snapshot = tracemalloc.take_snapshot()

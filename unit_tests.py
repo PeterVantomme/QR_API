@@ -68,12 +68,6 @@ class helper_data():
     def run_wrong_body_post_request(self,access_token):
         return(self.run_post(access_token, "12345678"))
 
-class helper_admin():
-    def change_password(current_pw, new_pw):
-        token = helper_data().correct_credentials()
-        reply = requests.post("https://127.0.0.1:1600/admin/change_password", data=json.dumps({"current_pw":current_pw,"new_pw":new_pw}), headers={"Authorization":f"Bearer {token}"})
-        return reply.status_code, reply.content
-
 class test_token(unittest.TestCase):
     def test_wrong_password_username(self):
         self.assertEqual(helper_data().wrong_password_username(), "{'detail': '400 - Incorrect username or password'}")
@@ -85,7 +79,6 @@ class test_token(unittest.TestCase):
         self.assertNotIn("detail", helper_data().correct_credentials())
 
 class test_post(unittest.TestCase):
-    #print(helper_admin.change_password())
     def test_wrong_credentials_post_request(self):
         self.assertEqual(helper_data().run_correct_post_request(helper_data().wrong_password_username()), {'detail': '401 - Could not validate credentials - Invalid token'})
 

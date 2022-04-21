@@ -18,3 +18,9 @@ class Error(Enum):
     INVALID_FILE = HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                     detail="400 - Can't find document, did u add it in the request?",
                     headers={"WWW-Authenticate": "Bearer"})
+    NO_QR_DETECTED = HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="400 - No QR found in document. Does the document contain a QR code?",
+                    headers={"WWW-Authenticate": "Bearer"})
+    QR_NOT_FOUND = HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="400 - No QR found in document. QR unreadable.",
+                    headers={"WWW-Authenticate": "Bearer"})
