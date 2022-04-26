@@ -39,7 +39,7 @@ class helper_data():
         return access_token
 
     def run_post(self, access_token, body):
-        reply=requests.post(f"http://127.0.0.1:80/data/{access_token}",data=body)
+        reply=requests.post(f"http://127.0.0.1:80/data/",data=body ,headers={'Authorization': f'Bearer {access_token}'})
         if reply.status_code in [400,401,404]:
             return json.loads(reply.content.decode())
         elif reply.status_code == 200:
@@ -50,6 +50,7 @@ class helper_data():
                 file.write(base64.b64decode(PDF))
             return {filename:QR_contents}
         else:
+            print(reply.content)
             return reply.status_code," ",reply.content
 
     def run_correct_post_request(self,access_token):

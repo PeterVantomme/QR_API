@@ -1,7 +1,8 @@
 from base64 import b64decode
 import binascii
-from distutils.log import error
+from http.client import HTTPConnection
 import json
+
 import Config
 import Modules.QR_Interpreter_ZBAR as QR_Interpreter_ZBAR
 import Modules.Transform_Data as Transform_Data
@@ -11,7 +12,8 @@ from cryptography.fernet import Fernet
 from datetime import timedelta
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, HTTPAuthorizationCredentials, HTTPBearer
+from fastapi import Security as fastapi_security
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 from Models.Site.Token import TokenData
@@ -24,6 +26,8 @@ from Modules.Cleanup import Cleanup
 ACCESS_TOKEN_EXPIRE_DAYS = Config.Auth.AUTH_TIME.value
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+http_scheme = HTTPBearer()
+security = HTTPBearer()
 FILENAME = Config.Filepath.DATA_OUT_FILENAME.value
 app = FastAPI()
 
@@ -82,8 +86,9 @@ async def login_for_access_token(data: bytes = Depends(parse_body)):
     return access_token
 
 #Method for checking credentials and receiving PDF document
-@app.post("/data/{token}")
-async def parse_input(token, data: bytes = Depends(parse_body)):
+@app.post("/data/")
+async def parse_input(data: bytes = Depends(parse_body), credentials: HTTPAuthorizationCredentials = fastapi_security(http_scheme)):
+    token = credentials.credentials
     tracemalloc.start()
     user = await get_current_user(token)
     filename = FILENAME+str(Config.Indexer.VALUE+1)
@@ -93,7 +98,7 @@ async def parse_input(token, data: bytes = Depends(parse_body)):
             with open(f'{Config.Filepath.DATA_IN.value}/{filename}.pdf', 'wb') as file:
                 file.write(data)
             Config.Indexer.VALUE += 1 #Increment file-index
-            response = RedirectResponse(f"/data/process/{token}/{filename}",302)
+            response = RedirectResponse(f"/data/process/{filename}",302, headers={'Authorization': f'Bearer {token}'})
             return response
         except binascii.Error:
             raise error_reply.ENCODE_ERROR.value
@@ -101,8 +106,9 @@ async def parse_input(token, data: bytes = Depends(parse_body)):
         raise error_reply.INVALID_CREDENTIALS.value
 
 #Method for returning PDF and handling it's transformations
-@app.get("/data/process/{token}/{filename}")
-async def get_data(token,filename):
+@app.get("/data/process/{filename}")
+async def get_data(filename, credentials: HTTPAuthorizationCredentials = fastapi_security(http_scheme)):
+    token = credentials.credentials
     user = await get_current_user(token)
     if user == None:
         raise error_reply.INVALID_CREDENTIALS.value
@@ -131,8 +137,9 @@ async def get_data(token,filename):
 ###########################################################################################################################################################################################################
 
 #Method for changing password
-@app.post("/changepassword/{token}") #Needs a dict with old and new password, encrypted using Fernet as body.
-async def change_password(token, credential_dict: bytes = Depends(parse_body)):
+@app.post("/changepassword/") #Needs a dict with old and new password, encrypted using Fernet as body.
+async def change_password(credential_dict: bytes = Depends(parse_body), credentials: HTTPAuthorizationCredentials = fastapi_security(http_scheme)):
+    token = credentials.credentials
     creds = json.loads(b64decode(Fernet(Config.Auth.KEY.value).decrypt(credential_dict)))
     user = await get_current_user(token)
     if user == None:
@@ -143,8 +150,9 @@ async def change_password(token, credential_dict: bytes = Depends(parse_body)):
     return True
 
 #Method for viewing all users
-@app.get("/userlist/{token}")
-async def get_user_list(token):
+@app.get("/userlist/")
+async def get_user_list(credentials: HTTPAuthorizationCredentials = fastapi_security(http_scheme)):
+    token = credentials.credentials
     user = await get_current_user(token)
     if user == None:
         raise error_reply.INVALID_CREDENTIALS.value
