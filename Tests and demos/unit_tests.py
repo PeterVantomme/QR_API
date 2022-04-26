@@ -10,7 +10,7 @@ class helper_data():
         login_dict = json.dumps({"username":"devt","password":"secrett"})
         body = base64.b64encode(login_dict.encode())
 
-        credentials = requests.post("http://127.0.0.1:80/token", data=body)
+        credentials = requests.post("http://127.0.0.1/token", data=body)
         access_token = str(json.loads(credentials.content))
         return access_token
 
@@ -18,7 +18,7 @@ class helper_data():
         login_dict = json.dumps({"username":"dev","password":"secrett"})
         body = base64.b64encode(login_dict.encode())
 
-        credentials = requests.post("http://127.0.0.1:80/token", data=body)
+        credentials = requests.post("http://127.0.0.1/token", data=body)
         access_token = str(json.loads(credentials.content))
         return access_token
 
@@ -26,7 +26,7 @@ class helper_data():
         login_dict = json.dumps({"username":"devt","password":"secret"})
         body = base64.b64encode(login_dict.encode())
 
-        credentials = requests.post("http://127.0.0.1:80/token", data=body)
+        credentials = requests.post("http://127.0.0.1/token", data=body)
         access_token = str(json.loads(credentials.content))
         return access_token
 
@@ -34,12 +34,12 @@ class helper_data():
         login_dict = json.dumps({"username":"dev","password":"Titeca_Admin_1234"})
         body = base64.b64encode(login_dict.encode())
 
-        credentials = requests.post("http://127.0.0.1:80/token", data=body)
+        credentials = requests.post("http://127.0.0.1/token", data=body)
         access_token = str(json.loads(credentials.content))
         return access_token
 
     def run_post(self, access_token, body):
-        reply=requests.post(f"http://127.0.0.1:80/data/",data=body ,headers={'Authorization': f'Bearer {access_token}'})
+        reply=requests.post(f"http://127.0.0.1/data/",data=body ,headers={'Authorization': f'Bearer {access_token}'})
         if reply.status_code in [400,401,404]:
             return json.loads(reply.content.decode())
         elif reply.status_code == 200:

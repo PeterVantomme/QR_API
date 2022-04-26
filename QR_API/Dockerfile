@@ -22,5 +22,5 @@ COPY Config.py Config.py
 RUN apt-get update
 RUN apt-get install ffmpeg libsm6 libxext6 libzbar0 -y
 RUN pip install PyPDF2
-CMD gunicorn main:app --workers 1 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:80 --max-requests 1000
-EXPOSE 80:80
+CMD gunicorn main:app --workers 1 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:5000 --max-requests 1000
+EXPOSE 5000:5000
