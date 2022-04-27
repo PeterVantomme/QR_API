@@ -5,7 +5,7 @@ class Network(Enum):
     ADDRESS = "127.0.0.1"
 
 class Filepath(Enum):
-    DATA_IN = "__Data"
+    DATA_IN = "__Temp_Data"
     DATA_OUT_FILENAME = "datafile"
     RAW_IMAGES = "__Temp_Images"
     TRANSFORMED_IMAGES = "__Temp_Images_for_QRReading"
