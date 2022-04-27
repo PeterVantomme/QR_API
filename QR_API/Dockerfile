@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir --upgrade -r requirements.txt
 COPY __Temp_Documents __Temp_Documents
 COPY __Temp_Images __Temp_Images
 COPY __Temp_Images_for_QRReading __Temp_Images_for_QRReading
-COPY __Data __Data
+COPY __Temp_Data __Temp_Data
 COPY Models Models
 COPY Modules Modules
 COPY main.py main.py
