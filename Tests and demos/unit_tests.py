@@ -87,7 +87,7 @@ class test_post(unittest.TestCase):
         self.assertEqual(helper_data().run_wrong_auth_post_request(helper_data().correct_credentials()), {'detail': '401 - Could not validate credentials - Invalid token'})
 
     def test_wrong_body_post_request(self):
-        self.assertEqual(helper_data().run_wrong_body_post_request(helper_data().correct_credentials()), {'detail': "400 - Can't read PDF document"})
+        self.assertEqual(helper_data().run_wrong_body_post_request(helper_data().correct_credentials()), {'detail': "400 - Fitz library can't read PDF document"})
     
     def test_correct_post_request(self):
         time_point_1 = time.perf_counter()

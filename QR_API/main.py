@@ -7,6 +7,7 @@ import Config
 import Modules.QR_Interpreter_ZBAR as QR_Interpreter_ZBAR
 import Modules.Transform_Data as Transform_Data
 import tracemalloc
+import fitz
 
 from cryptography.fernet import Fernet
 from datetime import timedelta
@@ -113,22 +114,24 @@ async def get_data(filename, credentials: HTTPAuthorizationCredentials = fastapi
     if user == None:
         raise error_reply.INVALID_CREDENTIALS.value
     else:
-        Error = Transform_Data.transform_file(filename)
-        if Error == None:
-            try:
-                QR_code_message = QR_Interpreter_ZBAR.read_file(filename)
-            except binascii.Error:
-                raise error_reply.NO_QR_DETECTED.value #Means that document might not even contain one.
-            except IndexError:
-                raise error_reply.QR_NOT_FOUND.value #Means that scanner cannot read the QR-code.
-            Cleanup(filename)
-            ##This code is useful for solving memory problems
+        try:
+            clean_QR = Transform_Data.transform_file(filename)
+            QR_code_message = QR_Interpreter_ZBAR.read_file(filename, clean_QR)
+
+             ##This code is useful for solving memory problems
             #snapshot = tracemalloc.take_snapshot()
             #top_stats = [str(stat) for stat in snapshot.statistics('lineno')[:10]]
             #return top_stats
+            Cleanup(filename)
             return QR_code_message
-        else:
-            raise error_reply.UNREADABLE_FILE.value
+        except binascii.Error:
+            raise error_reply.NO_QR_DETECTED.value #Means that document might not even contain one.
+        except IndexError:
+            raise error_reply.QR_NOT_FOUND.value #Means that scanner cannot read the QR-code.
+        except fitz.FileDataError: 
+            raise error_reply.UNREADABLE_FILE_FITZ.value
+       
+                
         
 ###########################################################################################################################################################################################################
 #                                                                                                                                                                                                         #

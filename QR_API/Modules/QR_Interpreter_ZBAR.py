@@ -70,9 +70,9 @@ def process_QR(img):
     return content
 
 ## Main method (called by API main.py)
-def read_file(filename):
+def read_file(filename, clean_qr):
     try:
-        img = cv2.imread(f"{QR_DIRECTORY}/{filename}.png")
+        img = clean_qr
         result = process_QR(img)
         return_value = decrypt_message(result)
 

@@ -24,3 +24,6 @@ class Error(Enum):
     QR_NOT_FOUND = HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                     detail="400 - No QR found in document. QR unreadable.",
                     headers={"WWW-Authenticate": "Bearer"})
+    UNREADABLE_FILE_FITZ = HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                detail="400 - Fitz library can't read PDF document",
+                headers={"WWW-Authenticate": "Bearer"})

@@ -2,7 +2,7 @@
 ## Imports & Globals
 import Config
 import os
-from numpy import array as narray
+import numpy as np
 import fitz
 import cv2
 import shutil
@@ -14,24 +14,26 @@ IMAGE_DIRECTORY = Config.Filepath.RAW_IMAGES.value
 DOCUMENT_DIRECTORY = Config.Filepath.DOCUMENTS.value
 QR_IMAGE_DIRECTORY = Config.Filepath.TRANSFORMED_IMAGES.value
 
+def pix2np(pix):
+    im = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.h, pix.w, pix.n)
+    im = np.ascontiguousarray(im[..., [0]])  # rgb to bgr
+    return im
+
 ## Transform methods
 ### Transforming the first page to QR-png
 def transform_pdf_to_png(filename):
     try:
-        PDF = fitz.open(f'{DATA_DIRECTORY}/{filename}.pdf')
-        image_list = PDF.get_page_images(0)
-        imagefile = fitz.Pixmap(PDF, image_list[0][0]) #First image in document = First page = QR-code
-        imagefile.save(f'{IMAGE_DIRECTORY}/{filename}.png')
-        del PDF, image_list #deleting variables from memory 
-        return None
+        doc = fitz.open(f'{DATA_DIRECTORY}/{filename}.pdf')
+        pix = fitz.Pixmap(doc, doc.get_page_images(0)[0][0])  
+        im = pix2np(pix)
+        return im
     except fitz.FileDataError:
-        return fitz.FileDataError
+        raise fitz.FileDataError
 
 ### Using opencv transformations to make QR-code more readable for system    
-def transform_png(filename):
-    image = cv2.imread(f'{IMAGE_DIRECTORY}/{filename}.png')
+def transform_png(filename, image):
     image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-    kernel = narray([[0, 0, 0],
+    kernel = np.array([[0, 0, 0],
                     [0, 1, 0],
                     [0, 0, 0]])
     image = cv2.filter2D(src=image, ddepth=-1, kernel=kernel)
@@ -42,7 +44,7 @@ def transform_png(filename):
     image = cv2.threshold(image,200,255,cv2.THRESH_BINARY)[1]
     image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
     image = cv2.morphologyEx(image, cv2.MORPH_CLOSE, cross_kernel)
-    kernel = narray([[0, -2, 0],
+    kernel = np.array([[0, -2, 0],
                     [-2, 12, -2],
                     [0, -2, 0]])
     image = cv2.filter2D(src=image, ddepth=-1, kernel=kernel)
@@ -54,12 +56,12 @@ def transform_png(filename):
     image = cv2.morphologyEx(image, cv2.MORPH_CLOSE, kernel, iterations=4) 
     image = cv2.morphologyEx(image, cv2.MORPH_OPEN, kernel, iterations=4) 
     image = cv2.threshold(image, 192, 255, cv2.THRESH_BINARY)[1]
-    kernel = narray([[-1, -1, -1],
+    kernel = np.array([[-1, -1, -1],
                     [-1, 30, -1],
                     [-1, -1, -1]])
     image = cv2.filter2D(src=image, ddepth=5, kernel=kernel)
     cv2.imwrite(f'{QR_IMAGE_DIRECTORY}/{filename}.png',image)
-    del image #clearing image variable to help garbage collection
+    return image
 
 ## Cleanup
 def cleanup(file):
@@ -84,13 +86,15 @@ def remove_first_page(file):
             shutil.copyfile(f'{DATA_DIRECTORY}/{file}.pdf', f'{DATA_DIRECTORY}/cleared_{file}.pdf')
 
 ## Main method (called by API main.py file)
-def transform_file(filename):
-    file = filename
+def transform_file(file):
     if "cleared" in file:
         cleanup(file)
     else:
-        Error = transform_pdf_to_png(file)
-        if Error == fitz.FileDataError: return Error
-        remove_first_page(file)
-        transform_png(file)
+        try:
+            image = transform_pdf_to_png(file)
+            remove_first_page(file)
+            clean_image = transform_png(file, image)
+            return clean_image
+        except fitz.FileDataError:
+            raise fitz.FileDataError
             
