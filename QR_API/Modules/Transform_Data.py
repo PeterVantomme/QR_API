@@ -51,13 +51,13 @@ def transform_png(image,file):
                     [-1, -1, -1]])
     image = cv2.filter2D(src=image, ddepth=5, kernel=kernel)
     image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
-    cv2.imwrite(f'{DATA_DIRECTORY}/{file}.png', image)
     return image
 
 ## Remove first page
 def remove_first_page(file):
     if file.pageCount > 1:
-         del file[0]
+        pages = [p for p in range(file.page_count) if p>0]
+        file.select(pages) 
     return file
 
 ## Main method (called by API main.py file)

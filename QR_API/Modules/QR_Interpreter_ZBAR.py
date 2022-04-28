@@ -59,9 +59,6 @@ def process_QR(img,file):
         content = decode(img)[0].data.decode("utf-8")
     except IndexError:
         raise IndexError
-    if content is None:
-        image = cv2.imread(f"{DATA_DIRECTORY}/{file}.png")
-        content = decode(image)[0].data.decode("utf-8")
     return content
 
 ## Main method (called by API main.py)

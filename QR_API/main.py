@@ -73,7 +73,7 @@ def get_home():
 #Use credentials to login {"username": <username>, "password": <password>}
 @app.post("/token", response_class=JSONResponse)
 async def login_for_access_token(data: Request):
-    credentials = await data.json() #Dict gets malformed during transfer for some reason
+    credentials = await data.json()
     security = sec(app, oauth2_scheme, pwd_context)
     user = security.authenticate_user(Authorised_users, credentials.get("username"), credentials.get("password"))
     if not user:
@@ -91,7 +91,7 @@ async def parse_input(file: UploadFile = File(...), credentials: HTTPAuthorizati
     data = file
     token = credentials.credentials
     user = await get_current_user(token)
-    filename = FILENAME+str(Config.Indexer.VALUE+1)
+    filename = FILENAME+str(Config.Indexer.VALUE)
     filename_old = FILENAME+str(Config.Indexer.VALUE)
     Cleanup(filename_old)
     if user != None:

@@ -17,7 +17,8 @@ COPY main.py main.py
 COPY Config.py Config.py
 
 RUN apt-get update
-RUN apt-get install ffmpeg libsm6 libxext6 libzbar0 -y
+#RUN apt-get install ffmpeg libsm6 libxext6 libzbar0 -y
+RUN apt-get install ffmpeg libzbar0 -y
 RUN pip install PyPDF2
 #Keep workers on 1, otherwise Cleanup will cause errors. (It removes loose variables from memories and old files.)
 CMD gunicorn main:app --workers 1 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:5000 --max-requests 1000
