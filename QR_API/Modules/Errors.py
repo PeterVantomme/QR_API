@@ -27,3 +27,6 @@ class Error(Enum):
     UNREADABLE_FILE_FITZ = HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                 detail="400 - Fitz library can't read PDF document",
                 headers={"WWW-Authenticate": "Bearer"})
+    FILE_ALREADY_DOWNLOADED = HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                detail="400 - Can't find file, it might have been downloaded already",
+                headers={"WWW-Authenticate": "Bearer"})

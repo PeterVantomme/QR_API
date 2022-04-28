@@ -17,7 +17,7 @@ import binascii
 ###Globals
 KEY = Config.Auth.KEY.value
 QR_DIRECTORY = Config.Filepath.TRANSFORMED_IMAGES.value
-DATA_DIRECTORY = Config.Filepath.DATA_IN.value
+DATA_DIRECTORY = Config.Filepath.DATA.value
 
 ## Decrypting
 def decrypt(laravelEncrypedStringBase64, laravelAppKeyBase64):
@@ -70,19 +70,11 @@ def process_QR(img):
     return content
 
 ## Main method (called by API main.py)
-def read_file(filename, clean_qr):
+def read_file(clean_qr):
     try:
-        img = clean_qr
-        result = process_QR(img)
-        return_value = decrypt_message(result)
-
-        with open(f"{DATA_DIRECTORY}/cleared_{filename}.pdf", "rb") as pdf_file:
-            encoded = b64encode(pdf_file.read())
-        
-        decrypted_QR_Replies={"filename" : filename,
-                            "QR_content" : return_value,
-                            "Pages" : encoded}
-        return decrypted_QR_Replies
+        result = process_QR(clean_qr)
+        qr_content = decrypt_message(result)
+        return qr_content
     except IndexError:
         raise IndexError
     except binascii.Error:

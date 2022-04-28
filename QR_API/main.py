@@ -1,18 +1,17 @@
 from base64 import b64decode
 import binascii
-from http.client import HTTPConnection
 import json
+
 
 import Config
 import Modules.QR_Interpreter_ZBAR as QR_Interpreter_ZBAR
 import Modules.Transform_Data as Transform_Data
-import tracemalloc
 import fitz
 
 from cryptography.fernet import Fernet
 from datetime import timedelta
 from fastapi import Depends, FastAPI, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, JSONResponse
 from fastapi.security import OAuth2PasswordBearer, HTTPAuthorizationCredentials, HTTPBearer
 from fastapi import Security as fastapi_security
 from jose import jwt, JWTError
@@ -90,13 +89,12 @@ async def login_for_access_token(data: bytes = Depends(parse_body)):
 @app.post("/data/")
 async def parse_input(data: bytes = Depends(parse_body), credentials: HTTPAuthorizationCredentials = fastapi_security(http_scheme)):
     token = credentials.credentials
-    tracemalloc.start()
     user = await get_current_user(token)
     filename = FILENAME+str(Config.Indexer.VALUE+1)
     if user != None:
         try:
             data = b64decode(data)
-            with open(f'{Config.Filepath.DATA_IN.value}/{filename}.pdf', 'wb') as file:
+            with open(f'{Config.Filepath.DATA.value}/{filename}.pdf', 'wb') as file:
                 file.write(data)
             Config.Indexer.VALUE += 1 #Increment file-index
             response = RedirectResponse(f"/data/process/{filename}",302, headers={'Authorization': f'Bearer {token}'})
@@ -107,7 +105,7 @@ async def parse_input(data: bytes = Depends(parse_body), credentials: HTTPAuthor
         raise error_reply.INVALID_CREDENTIALS.value
 
 #Method for returning PDF and handling it's transformations
-@app.get("/data/process/{filename}")
+@app.get("/data/process/{filename}", response_class=JSONResponse)
 async def get_data(filename, credentials: HTTPAuthorizationCredentials = fastapi_security(http_scheme)):
     token = credentials.credentials
     user = await get_current_user(token)
@@ -116,22 +114,33 @@ async def get_data(filename, credentials: HTTPAuthorizationCredentials = fastapi
     else:
         try:
             clean_QR = Transform_Data.transform_file(filename)
-            QR_code_message = QR_Interpreter_ZBAR.read_file(filename, clean_QR)
-
-             ##This code is useful for solving memory problems
-            #snapshot = tracemalloc.take_snapshot()
-            #top_stats = [str(stat) for stat in snapshot.statistics('lineno')[:10]]
-            #return top_stats
-            Cleanup(filename)
-            return QR_code_message
+            QR_code_message = QR_Interpreter_ZBAR.read_file(clean_QR)
+            return_message = {"filename":filename,
+                              filename: QR_code_message}
+            return return_message
         except binascii.Error:
             raise error_reply.NO_QR_DETECTED.value #Means that document might not even contain one.
         except IndexError:
             raise error_reply.QR_NOT_FOUND.value #Means that scanner cannot read the QR-code.
         except fitz.FileDataError: 
             raise error_reply.UNREADABLE_FILE_FITZ.value
-       
-                
+        except FileNotFoundError:
+            raise error_reply.INVALID_FILE.value
+
+@app.get("/get_pdf/{filename}", response_class=FileResponse)
+async def get_pdf(filename, credentials: HTTPAuthorizationCredentials = fastapi_security(http_scheme)):
+    token = credentials.credentials
+    user = await get_current_user(token)
+    if user == None:
+        raise error_reply.INVALID_CREDENTIALS.value
+    else:
+        try:
+            return f'{Config.Filepath.DATA.value}/{filename}.pdf'
+        except FileNotFoundError:
+            raise error_reply.FILE_ALREADY_DOWNLOADED.value
+            
+
+                       
         
 ###########################################################################################################################################################################################################
 #                                                                                                                                                                                                         #

@@ -1,19 +1,18 @@
 # Process input-pdf to extract QR-code and other pages
 ## Imports & Globals
+from pickle import TRUE
 import Config
 import os
 import numpy as np
 import fitz
 import cv2
-import shutil
 
-from PyPDF2  import PdfFileReader, PdfFileWriter
-
-DATA_DIRECTORY = Config.Filepath.DATA_IN.value
+DATA_DIRECTORY = Config.Filepath.DATA.value
 IMAGE_DIRECTORY = Config.Filepath.RAW_IMAGES.value
 DOCUMENT_DIRECTORY = Config.Filepath.DOCUMENTS.value
 QR_IMAGE_DIRECTORY = Config.Filepath.TRANSFORMED_IMAGES.value
 
+## Helper zorgt ervoor dat pdf image gelezen kan worden door cv2
 def pix2np(pix):
     im = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.h, pix.w, pix.n)
     im = np.ascontiguousarray(im[...])  # rgb to bgr
@@ -22,14 +21,11 @@ def pix2np(pix):
 
 ## Transform methods
 ### Transforming the first page to QR-png
-def transform_pdf_to_png(filename):
-    try:
-        doc = fitz.open(f'{DATA_DIRECTORY}/{filename}.pdf')
-        pix = fitz.Pixmap(doc, doc.get_page_images(0)[0][0])  
-        im = pix2np(pix)
-        return im
-    except fitz.FileDataError:
-        raise fitz.FileDataError
+def transform_pdf_to_png(pdf):
+    pix = fitz.Pixmap(pdf, pdf.get_page_images(0)[0][0])  
+    im = pix2np(pix)
+    return im
+
 
 ### Using opencv transformations to make QR-code more readable for system    
 def transform_png(image):
@@ -62,38 +58,26 @@ def transform_png(image):
     image = cv2.filter2D(src=image, ddepth=5, kernel=kernel)
     return image
 
-## Cleanup
-def cleanup(file):
-    os.remove(f'{IMAGE_DIRECTORY}/{file}.png')
-    
+## Remove first page
 def remove_first_page(file):    
-    #This class removes the first page of the file in order to create a document without the QR-code.
-    with open(f'{DATA_DIRECTORY}/{file}.pdf','rb') as f:
-        if PdfFileReader(f).getNumPages() > 1:
-            information = [2, PdfFileReader(f).getNumPages()]
-            pdf_writer = PdfFileWriter()
-            start = information[0]
-            end = information[1]
-            while start<=end:
-                pdf_writer.addPage(PdfFileReader(f).getPage(start-1))
-                start+=1
-            output_filename = f'{DATA_DIRECTORY}/cleared_{file}.pdf'
-            with open(output_filename,'wb') as out:
-                pdf_writer.write(out)
-        else:
-            #Document only has one page, thus no need to remove the first page.
-            shutil.copyfile(f'{DATA_DIRECTORY}/{file}.pdf', f'{DATA_DIRECTORY}/cleared_{file}.pdf')
+    del file[0]
+    return file
 
 ## Main method (called by API main.py file)
 def transform_file(file):
-    if "cleared" in file:
-        cleanup(file)
-    else:
-        try:
-            image = transform_pdf_to_png(file)
-            remove_first_page(file)
-            clean_image = transform_png(image)
-            return clean_image
-        except fitz.FileDataError:
-            raise fitz.FileDataError
+    try:
+        pdf = fitz.open(f'{DATA_DIRECTORY}/{file}.pdf')
+        image = transform_pdf_to_png(pdf)
+        clean_image = transform_png(image)
+        pdf = remove_first_page(pdf)
+        if pdf.can_save_incrementally():
+            pdf.saveIncr()
+        else:
+            pdf.save(f'{DATA_DIRECTORY}/{file}.pdf')
+            
+        return clean_image
+    except fitz.FileDataError:
+        raise fitz.FileDataError
+    except FileNotFoundError:
+        raise FileNotFoundError
             

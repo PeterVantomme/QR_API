@@ -5,12 +5,13 @@ class Network(Enum):
     ADDRESS = "127.0.0.1"
 
 class Filepath(Enum):
-    DATA_IN = "__Temp_Data"
+    DATA = "__Temp_Data"
     DATA_OUT_FILENAME = "datafile"
     RAW_IMAGES = "__Temp_Images"
     TRANSFORMED_IMAGES = "__Temp_Images_for_QRReading"
     DOCUMENTS = "__Temp_Documents"
     USER_DB = "Models/Site/API_DB.db"
+    PDF_FILE_ADDRESS = "http://127.0.0.1/get_pdf"
 
 class Auth(Enum):
     KEY = b'EDnpXl5oxi9+XHjTUbTwMg98jTeCt4tnJx5LaUtanME='
