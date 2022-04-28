@@ -1,45 +1,41 @@
-import base64
 import json
 import unittest
-import time
 import requests
+import time
 
 class helper_data():
 
     def wrong_password_username(self) -> str:
         login_dict = json.dumps({"username":"devt","password":"secrett"})
-        body = base64.b64encode(login_dict.encode())
-
-        credentials = requests.post("http://127.0.0.1/token", data=body)
+        credentials = requests.post("http://127.0.0.1/token", data=login_dict)
         access_token = str(json.loads(credentials.content))
         return access_token
 
     def wrong_password(self) -> str:
         login_dict = json.dumps({"username":"dev","password":"secrett"})
-        body = base64.b64encode(login_dict.encode())
-
-        credentials = requests.post("http://127.0.0.1/token", data=body)
+        credentials = requests.post("http://127.0.0.1/token", data=login_dict)
         access_token = str(json.loads(credentials.content))
         return access_token
 
     def wrong_username(self) -> str:
         login_dict = json.dumps({"username":"devt","password":"secret"})
-        body = base64.b64encode(login_dict.encode())
-
-        credentials = requests.post("http://127.0.0.1/token", data=body)
+        credentials = requests.post("http://127.0.0.1/token", data=login_dict)
         access_token = str(json.loads(credentials.content))
         return access_token
 
     def correct_credentials(self) -> str:
         login_dict = json.dumps({"username":"dev","password":"Titeca_Admin_1234"})
-        body = base64.b64encode(login_dict.encode())
-
-        credentials = requests.post("http://127.0.0.1/token", data=body)
+        credentials = requests.post("http://127.0.0.1/token", data=login_dict)
         access_token = str(json.loads(credentials.content))
         return access_token
 
     def run_post(self, access_token, body):
-        reply=requests.post(f"http://127.0.0.1/data/",data=body ,headers={'Authorization': f'Bearer {access_token}'})
+        try:
+            body = open(body,"rb")
+        except FileNotFoundError:
+            return FileNotFoundError
+        reply=requests.post(f"http://127.0.0.1/data/",files={"file":body}, headers={'Authorization': f'Bearer {access_token}'})
+        body.close()
         if reply.status_code in [400,401,404]:
             return json.loads(reply.content.decode())
         elif reply.status_code == 200:
@@ -53,17 +49,11 @@ class helper_data():
             return reply.status_code," ",reply.content
 
     def run_correct_post_request(self,access_token):
-        with open("Tests and demos/test_document.pdf", "rb") as pdf_file:
-            encoded = base64.b64encode(pdf_file.read())
-        body=bytes(encoded)
-        return(self.run_post(access_token, body))
+        return(self.run_post(access_token, "Tests and demos/test_document_shifted.pdf"))
     
     def run_wrong_auth_post_request(self,access_token):
-        with open("Tests and demos/test_document_shifted.pdf", "rb") as pdf_file:
-            encoded = base64.b64encode(pdf_file.read())
-        body=bytes(encoded)
         access_token = access_token+"12"
-        return(self.run_post(access_token, body))
+        return(self.run_post(access_token, "Tests and demos/test_document_shifted.pdf"))
 
     def run_wrong_body_post_request(self,access_token):
         return(self.run_post(access_token, "12345678"))
@@ -86,7 +76,7 @@ class test_post(unittest.TestCase):
         self.assertEqual(helper_data().run_wrong_auth_post_request(helper_data().correct_credentials()), {'detail': '401 - Could not validate credentials - Invalid token'})
 
     def test_wrong_body_post_request(self):
-        self.assertEqual(helper_data().run_wrong_body_post_request(helper_data().correct_credentials()), {'detail': "400 - Fitz library can't read PDF document"})
+        self.assertEqual(helper_data().run_wrong_body_post_request(helper_data().correct_credentials()), FileNotFoundError)
     
     def test_correct_post_request(self):
         time_point_1 = time.perf_counter()

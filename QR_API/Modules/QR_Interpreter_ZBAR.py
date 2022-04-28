@@ -62,7 +62,6 @@ def process_QR(img,file):
     if content is None:
         image = cv2.imread(f"{DATA_DIRECTORY}/{file}.png")
         content = decode(image)[0].data.decode("utf-8")
-    del image
     return content
 
 ## Main method (called by API main.py)

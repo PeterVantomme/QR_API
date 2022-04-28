@@ -10,7 +10,7 @@ import fitz
 
 from cryptography.fernet import Fernet
 from datetime import timedelta
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Request, File, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, JSONResponse
 from fastapi.security import OAuth2PasswordBearer, HTTPAuthorizationCredentials, HTTPBearer
 from fastapi import Security as fastapi_security
@@ -70,11 +70,10 @@ def get_home():
     return HTMLResponse('<html><body><h3>Welcome to the QR-API, there is no GUI for this so use requests only. (/docs for info) </h3></body></html>', 200)
 
 #Method for receiving token, this token is needed for most requests
-#Use credentials to login
+#Use credentials to login {"username": <username>, "password": <password>}
 @app.post("/token", response_class=JSONResponse)
-async def login_for_access_token(data: bytes = Depends(parse_body)):
-    credentials = b64decode(data.decode("utf8"))
-    credentials = json.loads(credentials.decode("utf8").replace("\\","").replace('"{',"{").replace('}"',"}")) #Dict gets malformed during transfer for some reason
+async def login_for_access_token(data: Request):
+    credentials = await data.json() #Dict gets malformed during transfer for some reason
     security = sec(app, oauth2_scheme, pwd_context)
     user = security.authenticate_user(Authorised_users, credentials.get("username"), credentials.get("password"))
     if not user:
@@ -86,8 +85,10 @@ async def login_for_access_token(data: bytes = Depends(parse_body)):
     return access_token
 
 #Method for checking credentials and receiving PDF document
+#Add token to Authorization header
 @app.post("/data/")
-async def parse_input(data: bytes = Depends(parse_body), credentials: HTTPAuthorizationCredentials = fastapi_security(http_scheme)):
+async def parse_input(file: UploadFile = File(...), credentials: HTTPAuthorizationCredentials = fastapi_security(http_scheme)):
+    data = file
     token = credentials.credentials
     user = await get_current_user(token)
     filename = FILENAME+str(Config.Indexer.VALUE+1)
@@ -95,9 +96,8 @@ async def parse_input(data: bytes = Depends(parse_body), credentials: HTTPAuthor
     Cleanup(filename_old)
     if user != None:
         try:
-            data = b64decode(data)
             with open(f'{Config.Filepath.DATA.value}/{filename}.pdf', 'wb') as file:
-                file.write(data)
+                file.write(await data.read())
 
             Config.Indexer.VALUE += 1 #Increment file-index
             response = RedirectResponse(f"/data/process/{filename}",302, headers={'Authorization': f'Bearer {token}'})
@@ -141,9 +141,6 @@ async def get_pdf(filename, credentials: HTTPAuthorizationCredentials = fastapi_
             return f'{Config.Filepath.DATA.value}/{filename}.pdf'
         except FileNotFoundError:
             raise error_reply.FILE_ALREADY_DOWNLOADED.value
-            
-
-                       
         
 ###########################################################################################################################################################################################################
 #                                                                                                                                                                                                         #
