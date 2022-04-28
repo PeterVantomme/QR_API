@@ -93,7 +93,7 @@ class test_post(unittest.TestCase):
         time_point_1 = time.perf_counter()
         reply = helper_data().run_correct_post_request(helper_data().correct_credentials())
         time_point_2 = time.perf_counter()
-        print("executed in: ", time_point_2 - time_point_1," seconds.")
+        print("executed in: ", time_point_2 - time_point_1," seconds.", " Reply: ", reply)
         self.assertNotIn("detail", reply)
 
 if __name__ == '__main__':

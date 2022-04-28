@@ -16,7 +16,8 @@ QR_IMAGE_DIRECTORY = Config.Filepath.TRANSFORMED_IMAGES.value
 
 def pix2np(pix):
     im = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.h, pix.w, pix.n)
-    im = np.ascontiguousarray(im[..., [0]])  # rgb to bgr
+    im = np.ascontiguousarray(im[...])  # rgb to bgr
+    im = cv2.cvtColor(im,cv2.COLOR_BGR2RGB)
     return im
 
 ## Transform methods
@@ -31,7 +32,7 @@ def transform_pdf_to_png(filename):
         raise fitz.FileDataError
 
 ### Using opencv transformations to make QR-code more readable for system    
-def transform_png(filename, image):
+def transform_png(image):
     image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     kernel = np.array([[0, 0, 0],
                     [0, 1, 0],
@@ -48,8 +49,7 @@ def transform_png(filename, image):
                     [-2, 12, -2],
                     [0, -2, 0]])
     image = cv2.filter2D(src=image, ddepth=-1, kernel=kernel)
-    cv2.imwrite(f"{QR_IMAGE_DIRECTORY}/{filename}.png", image)
-    image = cv2.imread(f"{QR_IMAGE_DIRECTORY}/{filename}.png")
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2,2))
     image = cv2.morphologyEx(image, cv2.MORPH_OPEN, kernel, iterations=4) 
@@ -60,7 +60,6 @@ def transform_png(filename, image):
                     [-1, 30, -1],
                     [-1, -1, -1]])
     image = cv2.filter2D(src=image, ddepth=5, kernel=kernel)
-    cv2.imwrite(f'{QR_IMAGE_DIRECTORY}/{filename}.png',image)
     return image
 
 ## Cleanup
@@ -93,7 +92,7 @@ def transform_file(file):
         try:
             image = transform_pdf_to_png(file)
             remove_first_page(file)
-            clean_image = transform_png(file, image)
+            clean_image = transform_png(image)
             return clean_image
         except fitz.FileDataError:
             raise fitz.FileDataError
