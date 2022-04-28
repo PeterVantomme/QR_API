@@ -71,7 +71,7 @@ def get_home():
 
 #Method for receiving token, this token is needed for most requests
 #Use credentials to login
-@app.post("/token")
+@app.post("/token", response_class=JSONResponse)
 async def login_for_access_token(data: bytes = Depends(parse_body)):
     credentials = b64decode(data.decode("utf8"))
     credentials = json.loads(credentials.decode("utf8").replace("\\","").replace('"{',"{").replace('}"',"}")) #Dict gets malformed during transfer for some reason
@@ -91,11 +91,14 @@ async def parse_input(data: bytes = Depends(parse_body), credentials: HTTPAuthor
     token = credentials.credentials
     user = await get_current_user(token)
     filename = FILENAME+str(Config.Indexer.VALUE+1)
+    filename_old = FILENAME+str(Config.Indexer.VALUE)
+    Cleanup(filename_old)
     if user != None:
         try:
             data = b64decode(data)
             with open(f'{Config.Filepath.DATA.value}/{filename}.pdf', 'wb') as file:
                 file.write(data)
+
             Config.Indexer.VALUE += 1 #Increment file-index
             response = RedirectResponse(f"/data/process/{filename}",302, headers={'Authorization': f'Bearer {token}'})
             return response
@@ -114,7 +117,7 @@ async def get_data(filename, credentials: HTTPAuthorizationCredentials = fastapi
     else:
         try:
             clean_QR = Transform_Data.transform_file(filename)
-            QR_code_message = QR_Interpreter_ZBAR.read_file(clean_QR)
+            QR_code_message = QR_Interpreter_ZBAR.read_file(clean_QR, filename)
             return_message = {"filename":filename,
                               filename: QR_code_message}
             return return_message

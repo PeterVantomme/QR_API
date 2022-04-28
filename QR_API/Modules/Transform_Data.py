@@ -1,16 +1,11 @@
 # Process input-pdf to extract QR-code and other pages
 ## Imports & Globals
-from pickle import TRUE
 import Config
-import os
 import numpy as np
 import fitz
 import cv2
 
 DATA_DIRECTORY = Config.Filepath.DATA.value
-IMAGE_DIRECTORY = Config.Filepath.RAW_IMAGES.value
-DOCUMENT_DIRECTORY = Config.Filepath.DOCUMENTS.value
-QR_IMAGE_DIRECTORY = Config.Filepath.TRANSFORMED_IMAGES.value
 
 ## Helper zorgt ervoor dat pdf image gelezen kan worden door cv2
 def pix2np(pix):
@@ -26,9 +21,8 @@ def transform_pdf_to_png(pdf):
     im = pix2np(pix)
     return im
 
-
 ### Using opencv transformations to make QR-code more readable for system    
-def transform_png(image):
+def transform_png(image,file):
     image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     kernel = np.array([[0, 0, 0],
                     [0, 1, 0],
@@ -56,11 +50,14 @@ def transform_png(image):
                     [-1, 30, -1],
                     [-1, -1, -1]])
     image = cv2.filter2D(src=image, ddepth=5, kernel=kernel)
+    image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+    cv2.imwrite(f'{DATA_DIRECTORY}/{file}.png', image)
     return image
 
 ## Remove first page
-def remove_first_page(file):    
-    del file[0]
+def remove_first_page(file):
+    if file.pageCount > 1:
+         del file[0]
     return file
 
 ## Main method (called by API main.py file)
@@ -68,13 +65,9 @@ def transform_file(file):
     try:
         pdf = fitz.open(f'{DATA_DIRECTORY}/{file}.pdf')
         image = transform_pdf_to_png(pdf)
-        clean_image = transform_png(image)
+        clean_image = transform_png(image,file)
         pdf = remove_first_page(pdf)
-        if pdf.can_save_incrementally():
-            pdf.saveIncr()
-        else:
-            pdf.save(f'{DATA_DIRECTORY}/{file}.pdf')
-            
+        pdf.saveIncr()
         return clean_image
     except fitz.FileDataError:
         raise fitz.FileDataError

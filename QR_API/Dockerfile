@@ -10,9 +10,6 @@ COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
 # 
-COPY __Temp_Documents __Temp_Documents
-COPY __Temp_Images __Temp_Images
-COPY __Temp_Images_for_QRReading __Temp_Images_for_QRReading
 COPY __Temp_Data __Temp_Data
 COPY Models Models
 COPY Modules Modules
@@ -22,5 +19,6 @@ COPY Config.py Config.py
 RUN apt-get update
 RUN apt-get install ffmpeg libsm6 libxext6 libzbar0 -y
 RUN pip install PyPDF2
+#Keep workers on 1, otherwise Cleanup will cause errors. (It removes loose variables from memories and old files.)
 CMD gunicorn main:app --workers 1 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:5000 --max-requests 1000
 EXPOSE 5000:5000

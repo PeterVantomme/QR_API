@@ -7,9 +7,6 @@ class Network(Enum):
 class Filepath(Enum):
     DATA = "__Temp_Data"
     DATA_OUT_FILENAME = "datafile"
-    RAW_IMAGES = "__Temp_Images"
-    TRANSFORMED_IMAGES = "__Temp_Images_for_QRReading"
-    DOCUMENTS = "__Temp_Documents"
     USER_DB = "Models/Site/API_DB.db"
     PDF_FILE_ADDRESS = "http://127.0.0.1/get_pdf"
 

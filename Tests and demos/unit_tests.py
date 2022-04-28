@@ -43,19 +43,17 @@ class helper_data():
         if reply.status_code in [400,401,404]:
             return json.loads(reply.content.decode())
         elif reply.status_code == 200:
-            print(reply.content)
-            filename = json.loads(reply.content.decode("utf-8")).get("filename")
-            QR_contents = json.loads(reply.content.decode("utf-8")).get(filename)
+            filename = json.loads(reply.content).get("filename")
+            QR_contents = json.loads(reply.content).get(filename)
             PDF = requests.get(f"http://127.0.0.1/get_pdf/{filename}",headers={'Authorization': f'Bearer {access_token}'})
             with open(f'datafile.pdf', 'wb') as file:
                 file.write(PDF.content)
             return {filename:QR_contents}
         else:
-            print(reply.content)
             return reply.status_code," ",reply.content
 
     def run_correct_post_request(self,access_token):
-        with open("Tests and demos/test_document_shifted.pdf", "rb") as pdf_file:
+        with open("Tests and demos/test_document.pdf", "rb") as pdf_file:
             encoded = base64.b64encode(pdf_file.read())
         body=bytes(encoded)
         return(self.run_post(access_token, body))

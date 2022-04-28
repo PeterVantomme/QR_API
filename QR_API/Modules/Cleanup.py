@@ -5,8 +5,8 @@ import os
 class Cleanup:
     def __init__(self, filename):
         self.filename = filename
-        self.force_garbagecollection()
         self.clear_directories()
+        self.force_garbagecollection()        
     
     @staticmethod
     def force_garbagecollection():
@@ -14,9 +14,7 @@ class Cleanup:
     
     def clear_directories(self):
         f = self.filename
-        folders_to_empty = [Config.Filepath.DATA_IN.value, Config.Filepath.RAW_IMAGES.value, Config.Filepath.TRANSFORMED_IMAGES.value, Config.Filepath.DOCUMENTS.value]
         try:
-            for folder in folders_to_empty:
-                os.remove(f"{folder}/{f}.pdf")
+            os.remove(f"{Config.Filepath.DATA.value}/*{f}*")
         except FileNotFoundError:
             pass #File does not exist, so no need to delete it.

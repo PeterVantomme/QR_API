@@ -1,9 +1,7 @@
 # QR-code reader using WeChatCV
 ## Imports & global variables
-from numpy import dtype
 import Config
 
-###QR-scanning - WECHAT
 import cv2
 
 ###Decryption
@@ -16,23 +14,17 @@ import binascii
 
 ###Globals
 KEY = Config.Auth.KEY.value
-QR_DIRECTORY = Config.Filepath.TRANSFORMED_IMAGES.value
 DATA_DIRECTORY = Config.Filepath.DATA.value
 
 ## Decrypting
 def decrypt(laravelEncrypedStringBase64, laravelAppKeyBase64):
-    dataJson = b64decode(laravelEncrypedStringBase64)
-    data = json.loads(dataJson)
-    value =  b64decode(data['value'])
-    iv = b64decode(data['iv'])
-    key = b64decode(laravelAppKeyBase64) 
-    decrypter = aesDecrypterCBC(iv, key)
-    decriptedSerializedMessage = decrypter.decrypt(value)
+    data = json.loads(b64decode(laravelEncrypedStringBase64))
+    decrypter = aesDecrypterCBC(b64decode(data['iv']), b64decode(laravelAppKeyBase64) )
+    decriptedSerializedMessage = decrypter.decrypt(b64decode(data['value']))
     # deserialize message
     try :
         # Attempt to deserialize message incase it was created in Laravel with Crypt::encrypt('Hello world.');
         decriptedMessage = unserialize(decriptedSerializedMessage)
-        del dataJson, data, value, iv, key, decrypter, decriptedSerializedMessage
         return str(decriptedMessage)
     except:
         raise Exception("Check you cyphered strings in Laravel using Crypt::encrypt() and NOT Crypt::encryptString()")
@@ -54,7 +46,7 @@ def decrypt_message(raw_message):
         message = b64encode(filtered_message)
         key = KEY
         message = decrypt(message,key)
-        return_value = b64encode(message.encode("utf8"))
+        return_value = message.encode("utf8")
         del decoded_message
         return return_value
     except binascii.Error:
@@ -62,17 +54,21 @@ def decrypt_message(raw_message):
 
 
 ## Reading the QR-code
-def process_QR(img):
+def process_QR(img,file):
     try:
         content = decode(img)[0].data.decode("utf-8")
     except IndexError:
         raise IndexError
+    if content is None:
+        image = cv2.imread(f"{DATA_DIRECTORY}/{file}.png")
+        content = decode(image)[0].data.decode("utf-8")
+    del image
     return content
 
 ## Main method (called by API main.py)
-def read_file(clean_qr):
+def read_file(clean_qr,file):
     try:
-        result = process_QR(clean_qr)
+        result = process_QR(clean_qr, file)
         qr_content = decrypt_message(result)
         return qr_content
     except IndexError:
