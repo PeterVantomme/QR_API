@@ -41,6 +41,8 @@ class helper_data():
         elif reply.status_code == 200:
             filename = json.loads(reply.content).get("filename")
             QR_contents = json.loads(reply.content).get(filename)
+            malloc = json.loads(reply.content).get("malloc")
+            print(malloc)
             PDF = requests.get(f"http://127.0.0.1/get_pdf/{filename}",headers={'Authorization': f'Bearer {access_token}'})
             with open(f'datafile.pdf', 'wb') as file:
                 file.write(PDF.content)

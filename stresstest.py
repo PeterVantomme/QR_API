@@ -9,7 +9,7 @@ def test():
         try:
             body = open(f"Examples_PDFs/{file}","rb")
         except FileNotFoundError:
-            reply = FileNotFoundError
+            raise FileNotFoundError
         reply=requests.post(f"http://127.0.0.1/data/",files={"file":body}, headers={'Authorization': f'Bearer {access_token}'})
         body.close()
         if reply.status_code in [400,401,404]:
@@ -17,10 +17,11 @@ def test():
         elif reply.status_code == 200:
             filename = json.loads(reply.content).get("filename")
             QR_contents = json.loads(reply.content).get(filename)
+            memalloc = json.loads(reply.content).get("malloc")
             PDF = requests.get(f"http://127.0.0.1/get_pdf/{filename}",headers={'Authorization': f'Bearer {access_token}'})
             with open(f'datafile.pdf', 'wb') as file:
                 file.write(PDF.content)
-            reply = {filename:QR_contents}
+            reply = ("memalloc",memalloc) #filename:QR_contents,
         else:
             reply = reply.status_code," ",reply.content
         print(reply)

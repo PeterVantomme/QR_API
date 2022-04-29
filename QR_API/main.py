@@ -21,6 +21,8 @@ from Modules.Errors import Error as error_reply
 from Models.Site.User import Authorised_users
 from Modules.Security import Security as sec
 from Modules.Cleanup import Cleanup
+import tracemalloc
+
 
 #Globals
 ACCESS_TOKEN_EXPIRE_DAYS = Config.Auth.AUTH_TIME.value
@@ -73,6 +75,7 @@ def get_home():
 #Use credentials to login {"username": <username>, "password": <password>}
 @app.post("/token", response_class=JSONResponse)
 async def login_for_access_token(data: Request):
+    tracemalloc.start() 
     credentials = await data.json()
     security = sec(app, oauth2_scheme, pwd_context)
     user = security.authenticate_user(Authorised_users, credentials.get("username"), credentials.get("password"))
@@ -92,13 +95,12 @@ async def parse_input(file: UploadFile = File(...), credentials: HTTPAuthorizati
     token = credentials.credentials
     user = await get_current_user(token)
     filename = FILENAME+str(Config.Indexer.VALUE)
-    filename_old = FILENAME+str(Config.Indexer.VALUE)
+    filename_old = FILENAME+str(Config.Indexer.VALUE-1)
     Cleanup(filename_old)
     if user != None:
         try:
             with open(f'{Config.Filepath.DATA.value}/{filename}.pdf', 'wb') as file:
                 file.write(await data.read())
-
             Config.Indexer.VALUE += 1 #Increment file-index
             response = RedirectResponse(f"/data/process/{filename}",302, headers={'Authorization': f'Bearer {token}'})
             return response
@@ -118,8 +120,12 @@ async def get_data(filename, credentials: HTTPAuthorizationCredentials = fastapi
         try:
             clean_QR = Transform_Data.transform_file(filename)
             QR_code_message = QR_Interpreter_ZBAR.read_file(clean_QR, filename)
+            snapshot = tracemalloc.take_snapshot() 
             return_message = {"filename":filename,
-                              filename: QR_code_message}
+                              filename: QR_code_message,
+                              "malloc":[str(stat) for stat in snapshot.statistics('lineno')[:10]]}
+            #Temporary code for memory
+                    
             return return_message
         except binascii.Error:
             raise error_reply.NO_QR_DETECTED.value #Means that document might not even contain one.
