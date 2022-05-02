@@ -2,8 +2,6 @@
 ## Imports & global variables
 import Config
 
-import cv2
-
 ###Decryption
 from base64 import b64encode, b64decode
 import json
@@ -54,7 +52,7 @@ def decrypt_message(raw_message):
 
 
 ## Reading the QR-code
-def process_QR(img,file):
+def process_QR(img):
     try:
         content = decode(img)[0].data.decode("utf-8")
     except IndexError:
@@ -62,9 +60,9 @@ def process_QR(img,file):
     return content
 
 ## Main method (called by API main.py)
-def read_file(clean_qr,file):
+def read_file(clean_qr):
     try:
-        result = process_QR(clean_qr, file)
+        result = process_QR(clean_qr)
         qr_content = decrypt_message(result)
         return qr_content
     except IndexError:

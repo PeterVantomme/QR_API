@@ -6,10 +6,14 @@ services:
       dockerfile: Dockerfile 
     ports:
       - "5000:5000"
+    mem_limit: "200m"
   proxy:
     image: nginx:stable-alpine
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./Nginx/default.conf  :/etc/nginx/conf.d/default.conf
       - ./Nginx/nginx.conf    :/etc/nginx/nginx.conf
+      - ./Https/nginx.key :/etc/nginx/certificate/nginx.key
+      - ./Https/nginx-certificate.crt :/etc/nginx/certificate/nginx-certificate.crt

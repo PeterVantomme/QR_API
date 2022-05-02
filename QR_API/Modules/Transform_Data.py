@@ -11,16 +11,17 @@ DATA_DIRECTORY = Config.Filepath.DATA.value
 def pix2np(pix):
     im = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.h, pix.w, pix.n)
     im = np.ascontiguousarray(im[...])  # rgb to bgr
-    im = resize(cvtColor(im,COLOR_BGR2RGB),(im.shape[1]//3,im.shape[0]//3))
-    return im
+    img = resize(cvtColor(im,COLOR_BGR2RGB),(im.shape[1]//3,im.shape[0]//3))
+    del im
+    return img
 
 ## Transform methods
 ### Transforming the first page to QR-png
 def transform_pdf_to_png(pdf):
     pix = fitz.Pixmap(pdf, pdf.get_page_images(0)[0][0])  
-    im = pix2np(pix)
+    img = pix2np(pix)
     del(pix)
-    return im
+    return img
 
 ### Using opencv transformations to make QR-code more readable for system    
 def transform_png(image):
@@ -64,9 +65,10 @@ def transform_file(file):
         pdf = fitz.open(f'{DATA_DIRECTORY}/{file}.pdf')
         image = transform_pdf_to_png(pdf)
         clean_image = transform_png(image)
-        pdf_page = remove_first_page(pdf)
-        pdf_page.saveIncr()
-        del pdf,image
+        pdf_pages = remove_first_page(pdf)
+        pdf_pages.saveIncr()
+        pdf_pages.close()
+        del pdf,image, pdf_pages
         return clean_image
     except fitz.FileDataError:
         raise fitz.FileDataError

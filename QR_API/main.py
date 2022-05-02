@@ -2,7 +2,6 @@ from base64 import b64decode
 import binascii
 import json
 
-
 import Config
 import Modules.QR_Interpreter_ZBAR as QR_Interpreter_ZBAR
 import Modules.Transform_Data as Transform_Data
@@ -75,7 +74,7 @@ def get_home():
 #Use credentials to login {"username": <username>, "password": <password>}
 @app.post("/token", response_class=JSONResponse)
 async def login_for_access_token(data: Request):
-    tracemalloc.start() 
+    #tracemalloc.start() 
     credentials = await data.json()
     security = sec(app, oauth2_scheme, pwd_context)
     user = security.authenticate_user(Authorised_users, credentials.get("username"), credentials.get("password"))
@@ -119,13 +118,12 @@ async def get_data(filename, credentials: HTTPAuthorizationCredentials = fastapi
     else:
         try:
             clean_QR = Transform_Data.transform_file(filename)
-            QR_code_message = QR_Interpreter_ZBAR.read_file(clean_QR, filename)
-            snapshot = tracemalloc.take_snapshot() 
+            QR_code_message = QR_Interpreter_ZBAR.read_file(clean_QR)
+            #snapshot = tracemalloc.take_snapshot() 
             return_message = {"filename":filename,
-                              filename: QR_code_message,
-                              "malloc":[str(stat) for stat in snapshot.statistics('lineno')[:10]]}
-            #Temporary code for memory
-                    
+                              filename: QR_code_message}
+                              #,"malloc":[str(stat) for stat in snapshot.statistics('lineno')[:10]]}
+
             return return_message
         except binascii.Error:
             raise error_reply.NO_QR_DETECTED.value #Means that document might not even contain one.
@@ -176,6 +174,3 @@ async def get_user_list(credentials: HTTPAuthorizationCredentials = fastapi_secu
         raise error_reply.INVALID_CREDENTIALS.value
     else:
         return Authorised_users().get()
-
-if __name__ == "__main__":
-    app = FastAPI()

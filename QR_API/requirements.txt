@@ -1,5 +1,5 @@
 ez_setup
-fastapi==0.75.0
+fastapi==0.69.0
 pymupdf
 phpserialize==1.3
 python-multipart
@@ -8,7 +8,8 @@ opencv-contrib-python
 cmake
 pycryptodomex
 pyzbar==0.1.9
-uvicorn==0.17.6
+#uvicorn==0.17.0
+hypercorn
 gunicorn==20.1.0
 passlib[bcrypt]
 python-jose[cryptography]
